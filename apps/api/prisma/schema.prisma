@@ -20,8 +20,26 @@ model Tenant {
 
   users         User[]
   refreshTokens RefreshToken[]
+  configValues  ConfigValue[]
 
   @@map("tenants")
+}
+
+model ConfigValue {
+  id         String   @id @default(uuid())
+  tenant_id  String
+  key        String
+  scope      ConfigScope
+  value      Json
+  updated_by String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@unique([key, scope, tenant_id])
+  @@index([scope, tenant_id])
+  @@map("config_values")
 }
 
 model User {
@@ -66,4 +84,9 @@ model RefreshToken {
 enum UserRole {
   ADMIN
   MEMBER
+}
+
+enum ConfigScope {
+  system
+  tenant
 }

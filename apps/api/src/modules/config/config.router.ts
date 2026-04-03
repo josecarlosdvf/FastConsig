@@ -15,18 +15,17 @@ const controller = new ConfigController(new ConfigService(new ConfigRepository()
 router.use(apiRateLimiter, tenantMiddleware, authMiddleware);
 
 router.get("/tenant", requirePermission("config:read"), (req, res) =>
-  controller.listTenant(req, res)
+  void controller.listTenant(req, res)
 );
 router.put("/tenant", requirePermission("config:write"), validate(updateConfigSchema), (req, res) =>
-  controller.updateTenant(req, res)
+  void controller.updateTenant(req, res)
 );
 
 router.get("/system", requirePermission("config:read"), (req, res) =>
-  controller.listSystem(req, res)
+  void controller.listSystem(req, res)
 );
 router.put("/system", requirePermission("config:write"), validate(updateConfigSchema), (req, res) =>
-  controller.updateSystem(req, res)
+  void controller.updateSystem(req, res)
 );
 
 export { router as configRouter };
-

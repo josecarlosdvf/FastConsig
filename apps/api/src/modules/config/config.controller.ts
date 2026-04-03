@@ -6,26 +6,27 @@ import type { UpdateConfigInput } from "./config.schema";
 export class ConfigController {
   constructor(private readonly service: ConfigService) {}
 
-  listTenant(req: Request, res: Response): void {
+  async listTenant(req: Request, res: Response): Promise<void> {
     const { tenantId } = req as AuthRequest;
-    res.json(this.service.listTenantConfig(tenantId));
+    res.json(await this.service.listTenantConfig(tenantId));
   }
 
-  listSystem(_req: Request, res: Response): void {
-    res.json(this.service.listSystemConfig());
+  async listSystem(req: Request, res: Response): Promise<void> {
+    const { tenantId } = req as AuthRequest;
+    res.json(await this.service.listSystemConfig(tenantId));
   }
 
-  updateTenant(req: Request, res: Response): void {
+  async updateTenant(req: Request, res: Response): Promise<void> {
     const { tenantId } = req as AuthRequest;
     const body = req.body as UpdateConfigInput;
-    const result = this.service.updateScopeConfig("tenant", body.entries, tenantId);
+    const result = await this.service.updateScopeConfig("tenant", body.entries, tenantId);
     res.json(result);
   }
 
-  updateSystem(req: Request, res: Response): void {
+  async updateSystem(req: Request, res: Response): Promise<void> {
+    const { tenantId } = req as AuthRequest;
     const body = req.body as UpdateConfigInput;
-    const result = this.service.updateScopeConfig("system", body.entries);
+    const result = await this.service.updateScopeConfig("system", body.entries, tenantId);
     res.json(result);
   }
 }
-

@@ -24,9 +24,9 @@ interface ConfigResolved {
 export class ConfigService {
   constructor(private readonly repo: ConfigRepository) {}
 
-  listTenantConfig(tenantId: string): ConfigResolved[] {
+  async listTenantConfig(tenantId: string): Promise<ConfigResolved[]> {
     const definitions = this.repo.listDefinitions();
-    const values = this.repo.listValues("tenant", tenantId);
+    const values = await this.repo.listValues("tenant", tenantId);
     const valueMap = new Map(values.map((v) => [v.key, v]));
 
     return definitions
@@ -48,9 +48,9 @@ export class ConfigService {
       });
   }
 
-  listSystemConfig(): ConfigResolved[] {
+  async listSystemConfig(tenantId: string): Promise<ConfigResolved[]> {
     const definitions = this.repo.listDefinitions();
-    const values = this.repo.listValues("system");
+    const values = await this.repo.listValues("system", tenantId);
     const valueMap = new Map(values.map((v) => [v.key, v]));
 
     return definitions
@@ -72,7 +72,11 @@ export class ConfigService {
       });
   }
 
-  updateScopeConfig(scope: ConfigScope, entries: UpdateEntry[], tenantId?: string): ConfigResolved[] {
+  async updateScopeConfig(
+    scope: ConfigScope,
+    entries: UpdateEntry[],
+    tenantId?: string
+  ): Promise<ConfigResolved[]> {
     const definitions = this.repo.listDefinitions().filter((def) => def.scope === scope);
     const defMap = new Map(definitions.map((d) => [d.key, d]));
 
@@ -107,11 +111,11 @@ export class ConfigService {
         }
       }
 
-      this.repo.upsertValue(def.key, scope, entry.value, tenantId);
+      await this.repo.upsertValue(def.key, scope, entry.value, tenantId);
     }
 
     return scope === "system"
-      ? this.listSystemConfig()
+      ? this.listSystemConfig(tenantId as string)
       : this.listTenantConfig(tenantId as string);
   }
 }

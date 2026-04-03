@@ -49,6 +49,7 @@ export class UserRepository {
     const ctx = getContext();
     return this.db(tenant_id).user.create({
       data: {
+        tenant_id,
         ...rest,
         updated_by: ctx?.userId ?? null,
       },

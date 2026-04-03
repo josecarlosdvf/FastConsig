@@ -6,10 +6,11 @@ import {
   Container,
   Form,
   FormAlert,
-  FormSection,
   Input,
   PageHeader,
+  SchemaForm,
 } from "@fastconsig/ui";
+import { z } from "zod";
 import { configApi, ConfigItem } from "../../services/config";
 
 type Category = ConfigItem["category"];
@@ -39,6 +40,7 @@ export default function ConfigPage(): JSX.Element {
   const [feedback, setFeedback] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [editingKey, setEditingKey] = useState<string | null>(null);
 
   const filtered = useMemo(
     () => items.filter((item) => item.category === activeCategory),
@@ -71,17 +73,14 @@ export default function ConfigPage(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope]);
 
-  async function save(): Promise<void> {
+  async function saveSingle(item: ConfigItem, rawValue: string): Promise<void> {
     if (!tenantId || !token) return;
     setLoading(true);
     setError("");
     setFeedback("");
     try {
       const payload = {
-        entries: items.map((item) => ({
-          key: item.key,
-          value: parseValue(item.type, draft[item.key] ?? ""),
-        })),
+        entries: [{ key: item.key, value: parseValue(item.type, rawValue) }],
       };
       const result = scope === "tenant"
         ? await configApi.updateTenant(tenantId, token, payload)
@@ -140,19 +139,44 @@ export default function ConfigPage(): JSX.Element {
         ))}
       </Form>
 
-      <Form onSubmit={(e) => { e.preventDefault(); void save(); }}>
+      <Form>
         {filtered.map((item) => (
-          <FormSection key={item.key} title={item.label} description={item.description ?? item.key}>
+          <Form key={item.key} title={item.label} description={item.description ?? item.key}>
             <Input
-              id={item.key}
+              id={`${item.key}-preview`}
+              label={item.key}
               value={draft[item.key] ?? ""}
               onChange={(e) => setDraft((prev) => ({ ...prev, [item.key]: e.target.value }))}
             />
-          </FormSection>
+            <Button type="button" size="sm" onClick={() => setEditingKey(item.key)}>
+              Editar por schema
+            </Button>
+            {editingKey === item.key ? (
+              <SchemaForm
+                schema={z.object({
+                  value: z.string().min(1),
+                })}
+                title={`Editar ${item.label}`}
+                description="Fluxo de edição guiado por schema (Zod)"
+                fields={{
+                  value: {
+                    label: "Valor",
+                    type: "text",
+                  },
+                }}
+                defaultValues={{
+                  value: draft[item.key] ?? "",
+                }}
+                submitLabel="Salvar este campo"
+                onSubmit={async (data) => {
+                  await saveSingle(item, data.value);
+                  setDraft((prev) => ({ ...prev, [item.key]: data.value }));
+                  setEditingKey(null);
+                }}
+              />
+            ) : null}
+          </Form>
         ))}
-        <Button type="submit" isLoading={loading}>
-          Salvar alterações
-        </Button>
         {feedback ? <FormAlert type="success" message={feedback} /> : null}
         {error ? <FormAlert type="error" message={error} /> : null}
       </Form>

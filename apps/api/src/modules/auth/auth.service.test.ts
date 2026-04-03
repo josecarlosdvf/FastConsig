@@ -31,6 +31,7 @@ describe("AuthService", () => {
     password: "$2b$12$hashedpassword",
     role: "ADMIN" as const,
     is_active: true,
+    updated_by: null,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -232,4 +233,3 @@ describe("AuthService", () => {
     });
   });
 });
-

@@ -21,9 +21,13 @@ describe("UserService", () => {
 
   const mockUser = {
     id: "user-1",
+    tenant_id: TENANT_ID,
     name: "João Silva",
     email: "joao@example.com",
+    password: "hashed-pass",
     role: "MEMBER" as const,
+    is_active: true,
+    updated_by: null,
     created_at: new Date(),
     updated_at: new Date(),
   };

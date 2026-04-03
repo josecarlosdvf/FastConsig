@@ -1,19 +1,21 @@
 import { getContext, pluginRegistry } from "@fastconsig/core";
 import type { ConfigDefinition } from "@fastconsig/types";
+import type { Prisma } from "@prisma/client";
+import { prisma } from "../../shared/database/prisma";
 
 type ConfigValue = string | number | boolean | Record<string, unknown>;
 type Scope = "system" | "tenant";
 
-interface ConfigStoreEntry {
+export interface ConfigStoreEntry {
+  id: string;
   key: string;
   scope: Scope;
   tenantId?: string;
   value: ConfigValue;
+  createdAt: Date;
   updatedAt: Date;
   updatedBy?: string;
 }
-
-const configStore = new Map<string, ConfigStoreEntry>();
 
 const BASE_CONFIG_DEFINITIONS: ConfigDefinition[] = [
   {
@@ -55,21 +57,27 @@ const BASE_CONFIG_DEFINITIONS: ConfigDefinition[] = [
   },
 ];
 
-function serializeValue(value: ConfigValue): string {
-  if (typeof value === "string") return value;
-  return JSON.stringify(value);
-}
-
-function deserializeValue(value: string): ConfigValue {
-  try {
-    return JSON.parse(value) as ConfigValue;
-  } catch {
+function normalizeValue(value: unknown): ConfigValue {
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
     return value;
   }
+
+  if (typeof value === "object" && value !== null) {
+    return value as Record<string, unknown>;
+  }
+
+  return String(value);
 }
 
-function configMapKey(key: string, scope: Scope, tenantId?: string): string {
-  return `${scope}:${tenantId ?? "system"}:${key}`;
+function toPrismaJson(value: ConfigValue): Prisma.InputJsonValue {
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return value;
+  }
+  return value as Prisma.InputJsonObject;
 }
 
 export class ConfigRepository {
@@ -85,30 +93,67 @@ export class ConfigRepository {
     return Array.from(merged.values());
   }
 
-  listValues(scope: Scope, tenantId?: string): ConfigStoreEntry[] {
-    return Array.from(configStore.values()).filter((entry) => {
-      if (entry.scope !== scope) return false;
-      if (scope === "tenant") return entry.tenantId === tenantId;
-      return true;
+  async listValues(scope: Scope, tenantId?: string): Promise<ConfigStoreEntry[]> {
+    if (!tenantId) {
+      throw new Error("tenantId é obrigatório para leitura de configurações");
+    }
+    const rows = await prisma.configValue.findMany({
+      where: { scope, tenant_id: tenantId },
+      orderBy: { key: "asc" },
     });
+
+    return rows.map((row: Prisma.ConfigValueGetPayload<Record<string, never>>) => ({
+      id: row.id,
+      key: row.key,
+      scope: row.scope,
+      tenantId: row.tenant_id ?? undefined,
+      value: normalizeValue(row.value),
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      updatedBy: row.updated_by ?? undefined,
+    }));
   }
 
-  upsertValue(
+  async upsertValue(
     key: string,
     scope: Scope,
     value: ConfigValue,
     tenantId?: string
-  ): ConfigStoreEntry {
+  ): Promise<ConfigStoreEntry> {
+    if (!tenantId) {
+      throw new Error("tenantId é obrigatório para escrita de configurações");
+    }
     const ctx = getContext();
-    const entry: ConfigStoreEntry = {
-      key,
-      scope,
-      tenantId,
-      value: deserializeValue(serializeValue(value)),
-      updatedAt: new Date(),
-      updatedBy: ctx?.userId,
+    const saved = await prisma.configValue.upsert({
+      where: {
+        key_scope_tenant_id: {
+          key,
+          scope,
+          tenant_id: tenantId,
+        },
+      },
+      create: {
+        key,
+        scope,
+        tenant_id: tenantId,
+        value: toPrismaJson(value),
+        updated_by: ctx?.userId ?? null,
+      },
+      update: {
+        value: toPrismaJson(value),
+        updated_by: ctx?.userId ?? null,
+      },
+    });
+
+    return {
+      id: saved.id,
+      key: saved.key,
+      scope: saved.scope,
+      tenantId: saved.tenant_id ?? undefined,
+      value: normalizeValue(saved.value),
+      createdAt: saved.created_at,
+      updatedAt: saved.updated_at,
+      updatedBy: saved.updated_by ?? undefined,
     };
-    configStore.set(configMapKey(key, scope, tenantId), entry);
-    return entry;
   }
 }

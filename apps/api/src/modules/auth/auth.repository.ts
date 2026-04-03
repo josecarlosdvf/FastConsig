@@ -31,6 +31,7 @@ export class AuthRepository {
   async storeRefreshToken(data: StoreRefreshTokenData) {
     return createTenantClient(data.tenantId).refreshToken.create({
       data: {
+        tenant_id: data.tenantId,
         user_id: data.userId,
         token_hash: data.tokenHash,
         expires_at: data.expiresAt,
