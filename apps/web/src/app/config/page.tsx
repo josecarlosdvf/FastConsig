@@ -47,14 +47,35 @@ export default function ConfigPage(): JSX.Element {
     [items, activeCategory]
   );
 
+  async function listByScope(
+    currentScope: "tenant" | "system",
+    currentTenantId: string,
+    currentToken: string
+  ): Promise<ConfigItem[]> {
+    if (currentScope === "tenant") {
+      return configApi.listTenant(currentTenantId, currentToken);
+    }
+    return configApi.listSystem(currentTenantId, currentToken);
+  }
+
+  async function updateByScope(
+    currentScope: "tenant" | "system",
+    currentTenantId: string,
+    currentToken: string,
+    payload: { entries: Array<{ key: string; value: ConfigItem["value"] }> }
+  ): Promise<ConfigItem[]> {
+    if (currentScope === "tenant") {
+      return configApi.updateTenant(currentTenantId, currentToken, payload);
+    }
+    return configApi.updateSystem(currentTenantId, currentToken, payload);
+  }
+
   async function load(): Promise<void> {
     if (!tenantId || !token) return;
     setLoading(true);
     setError("");
     try {
-      const result = scope === "tenant"
-        ? await configApi.listTenant(tenantId, token)
-        : await configApi.listSystem(tenantId, token);
+      const result = await listByScope(scope, tenantId, token);
       setItems(result);
       const nextDraft: Record<string, string> = {};
       for (const item of result) {
@@ -69,7 +90,7 @@ export default function ConfigPage(): JSX.Element {
   }
 
   useEffect(() => {
-    void load();
+    load().catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope]);
 
@@ -82,9 +103,7 @@ export default function ConfigPage(): JSX.Element {
       const payload = {
         entries: [{ key: item.key, value: parseValue(item.type, rawValue) }],
       };
-      const result = scope === "tenant"
-        ? await configApi.updateTenant(tenantId, token, payload)
-        : await configApi.updateSystem(tenantId, token, payload);
+      const result = await updateByScope(scope, tenantId, token, payload);
       setItems(result);
       setFeedback("Configurações salvas com sucesso.");
     } catch (err: unknown) {

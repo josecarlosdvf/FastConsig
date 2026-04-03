@@ -1,5 +1,7 @@
 import type { ConfigDefinition, ConfigScope } from "@fastconsig/types";
+import { pluginRegistry } from "@fastconsig/core";
 import { ConfigRepository } from "./config.repository";
+import { BASE_CONFIG_DEFINITIONS } from "./config.definitions";
 
 type ConfigValue = string | number | boolean | Record<string, unknown>;
 
@@ -24,8 +26,20 @@ interface ConfigResolved {
 export class ConfigService {
   constructor(private readonly repo: ConfigRepository) {}
 
+  private listDefinitions(): ConfigDefinition[] {
+    const pluginDefinitions = pluginRegistry.listConfigDefinitions();
+    const merged = new Map<string, ConfigDefinition>();
+    for (const definition of BASE_CONFIG_DEFINITIONS) {
+      merged.set(definition.key, definition);
+    }
+    for (const definition of pluginDefinitions) {
+      merged.set(definition.key, definition);
+    }
+    return Array.from(merged.values());
+  }
+
   async listTenantConfig(tenantId: string): Promise<ConfigResolved[]> {
-    const definitions = this.repo.listDefinitions();
+    const definitions = this.listDefinitions();
     const values = await this.repo.listValues("tenant", tenantId);
     const valueMap = new Map(values.map((v) => [v.key, v]));
 
@@ -49,7 +63,7 @@ export class ConfigService {
   }
 
   async listSystemConfig(tenantId: string): Promise<ConfigResolved[]> {
-    const definitions = this.repo.listDefinitions();
+    const definitions = this.listDefinitions();
     const values = await this.repo.listValues("system", tenantId);
     const valueMap = new Map(values.map((v) => [v.key, v]));
 
@@ -77,7 +91,7 @@ export class ConfigService {
     entries: UpdateEntry[],
     tenantId?: string
   ): Promise<ConfigResolved[]> {
-    const definitions = this.repo.listDefinitions().filter((def) => def.scope === scope);
+    const definitions = this.listDefinitions().filter((def) => def.scope === scope);
     const defMap = new Map(definitions.map((d) => [d.key, d]));
 
     for (const entry of entries) {

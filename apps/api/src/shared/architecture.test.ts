@@ -115,12 +115,23 @@ describe("Governance: write routes must use validate() middleware", () => {
 describe("Governance: protected routers must declare authMiddleware", () => {
   const protectedRouters = routerFiles.filter((f) =>
     f.includes(path.join("modules", "user")) ||
-    f.includes(path.join("modules", "session"))
+    f.includes(path.join("modules", "session")) ||
+    f.includes(path.join("modules", "config"))
   );
 
   it.each(protectedRouters)("%s must declare authMiddleware", (file) => {
     const content = readFile(file);
     expect(content).toMatch(/authMiddleware/);
+  });
+});
+
+describe("Governance: config router must enforce permission checks", () => {
+  const configRouter = routerFiles.filter((f) => f.includes(path.join("modules", "config")));
+
+  it.each(configRouter)("%s must declare requirePermission for config routes", (file) => {
+    const content = readFile(file);
+    expect(content).toMatch(/requirePermission\("config:read"\)/);
+    expect(content).toMatch(/requirePermission\("config:write"\)/);
   });
 });
 
