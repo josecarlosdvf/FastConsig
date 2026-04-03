@@ -11,6 +11,10 @@ import { RequestWithId } from "./request-id.middleware";
  *
  * `tenantMiddleware` and `authMiddleware` enrich the same context object with
  * `tenantId` and `userId` respectively — no additional scope is needed.
+ *
+ * Note: `next` is called inside the context via an arrow wrapper so that the
+ * AsyncLocalStorage scope remains active for the entire async call chain,
+ * including downstream error handlers.
  */
 export function contextMiddleware(
   req: Request,
@@ -18,5 +22,5 @@ export function contextMiddleware(
   next: NextFunction
 ): void {
   const requestId = (req as RequestWithId).requestId;
-  runWithContext({ requestId }, next);
+  runWithContext({ requestId }, () => next());
 }

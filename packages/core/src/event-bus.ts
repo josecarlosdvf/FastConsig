@@ -87,26 +87,36 @@ export class EventBus {
     if (!set) return;
 
     for (const handler of set) {
+      // The pending promise tracks the full lifecycle: setImmediate scheduling
+      // + the async handler's completion. This avoids the race where the outer
+      // promise resolves before the inner async work finishes.
+      let resolvePending!: () => void;
       const p = new Promise<void>((resolve) => {
-        setImmediate(() => {
-          let result: void | Promise<void>;
-          try {
-            result = (handler as Handler<T>)(payload);
-          } catch (err) {
-            log.error({ event, err }, `Error in event handler for "${event}"`);
-            resolve();
-            return;
-          }
-          resolve(
-            Promise.resolve(result).catch((err) => {
-              log.error({ event, err }, `Error in event handler for "${event}"`);
-            })
-          );
-        });
+        resolvePending = resolve;
       });
 
       this._pending.add(p);
-      void p.finally(() => this._pending.delete(p));
+
+      setImmediate(() => {
+        let result: void | Promise<void>;
+        try {
+          result = (handler as Handler<T>)(payload);
+        } catch (err) {
+          log.error({ event, err }, `Error in event handler for "${event}"`);
+          resolvePending();
+          this._pending.delete(p);
+          return;
+        }
+
+        Promise.resolve(result)
+          .catch((err) => {
+            log.error({ event, err }, `Error in event handler for "${event}"`);
+          })
+          .finally(() => {
+            resolvePending();
+            this._pending.delete(p);
+          });
+      });
     }
   }
 
@@ -120,22 +130,30 @@ export class EventBus {
    * Use this in tests to drain the async handler queue before making
    * assertions about side effects of emitted events.
    *
+   * Loops until `_pending` is empty to handle handlers that themselves
+   * emit further events (nested emissions).
+   *
    * @example
    * await service.create(data, tenantId);
    * await eventBus.flush();
    * expect(handler).toHaveBeenCalledWith(...);
    */
   async flush(): Promise<void> {
-    // Let any pending setImmediate callbacks run first (FIFO order ensures
-    // all emit()-scheduled callbacks fire before this one).
-    await new Promise<void>((resolve) => setImmediate(resolve));
-    // Then await any async work those callbacks initiated.
-    if (this._pending.size > 0) {
-      await Promise.allSettled([...this._pending]);
+    // Drain until no more pending work remains (handles nested emits).
+    let iterations = 0;
+    while (this._pending.size > 0 || iterations === 0) {
+      // Allow scheduled setImmediate callbacks to fire (FIFO order).
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      if (this._pending.size > 0) {
+        await Promise.allSettled([...this._pending]);
+      }
+      iterations += 1;
+      // Safety: avoid infinite loop if handlers keep emitting.
+      if (iterations > 10) break;
     }
   }
 
-  /** Remove all handlers and pending work (useful in tests). */
+  /** Remove all handlers and cancel pending work tracking (useful in tests). */
   clear(): void {
     this.handlers.clear();
     this._pending.clear();

@@ -23,17 +23,26 @@ class MetricsStore {
   readonly routes: Record<string, RouteStats> = {};
 
   private routeKey(req: Request): string {
-    // Use Express route pattern when available, fall back to path prefix
+    // Use Express route pattern when available, fall back to replacing UUID-shaped
+    // path segments (8-4-4-4-12 hex groups) with a `:id` placeholder.
+    const UUID_RE = /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
     const pattern =
       (req.route?.path as string | undefined) ??
-      req.path.replace(/\/[0-9a-f-]{8,}/gi, "/:id");
+      req.path.replace(UUID_RE, "/:id");
     return `${req.method} ${pattern}`;
+  }
+
+  private statusBucket(statusCode: number): string {
+    if (statusCode >= 500) return "5xx";
+    if (statusCode >= 400) return "4xx";
+    if (statusCode >= 300) return "3xx";
+    return "2xx";
   }
 
   record(req: Request, statusCode: number, durationMs: number): void {
     this.totalRequests += 1;
 
-    const bucket = statusCode >= 500 ? "5xx" : statusCode >= 400 ? "4xx" : statusCode >= 300 ? "3xx" : "2xx";
+    const bucket = this.statusBucket(statusCode);
     this.statusCodes[bucket] = (this.statusCodes[bucket] ?? 0) + 1;
 
     const key = this.routeKey(req);

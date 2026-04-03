@@ -43,21 +43,22 @@ export class AuthService {
   private issueTokenPair(userId: string, role: string, tenantId: string) {
     const { secret } = this.getSecrets();
 
-    const expiresIn = process.env.JWT_EXPIRES_IN ?? "1h";
+    const expiresInStr = process.env.JWT_EXPIRES_IN ?? "1h";
     const refreshExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN ?? "7d";
+
+    // Use the numeric (seconds) form so @types/jsonwebtoken's StringValue
+    // template-literal constraint is satisfied without unsafe casts.
+    const expiresInSeconds = parseExpiresIn(expiresInStr);
 
     const accessToken = jwt.sign(
       { sub: userId, role, tenantId },
       secret,
-      // expiresIn is validated at runtime; cast through unknown to satisfy
-      // the @types/jsonwebtoken StringValue template-literal constraint.
-      { expiresIn: expiresIn as unknown as `${number}${"s" | "m" | "h" | "d"}` }
+      { expiresIn: expiresInSeconds }
     );
 
     const rawRefreshToken = crypto.randomBytes(REFRESH_TOKEN_BYTES).toString("hex");
     const tokenHash = hashToken(rawRefreshToken);
     const expiresAt = new Date(Date.now() + parseExpiresIn(refreshExpiresIn) * 1000);
-
     return { accessToken, rawRefreshToken, tokenHash, expiresAt };
   }
 
