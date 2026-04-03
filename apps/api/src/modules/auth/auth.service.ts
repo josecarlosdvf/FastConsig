@@ -5,7 +5,6 @@ import { eventBus, createLogger } from "@fastconsig/core";
 import { AuthRepository } from "./auth.repository";
 
 const log = createLogger("auth-service");
-const BCRYPT_ROUNDS = 12;
 const REFRESH_TOKEN_BYTES = 64;
 
 export interface LoginContext {
@@ -50,7 +49,9 @@ export class AuthService {
     const accessToken = jwt.sign(
       { sub: userId, role, tenantId },
       secret,
-      { expiresIn }
+      // expiresIn is validated at runtime; cast through unknown to satisfy
+      // the @types/jsonwebtoken StringValue template-literal constraint.
+      { expiresIn: expiresIn as unknown as `${number}${"s" | "m" | "h" | "d"}` }
     );
 
     const rawRefreshToken = crypto.randomBytes(REFRESH_TOKEN_BYTES).toString("hex");
@@ -92,7 +93,7 @@ export class AuthService {
       ipAddress: ctx.ip,
     });
 
-    await eventBus.emit("auth.login", {
+    eventBus.emit("auth.login", {
       tenantId: user.tenant_id,
       userId: user.id,
       ip: ctx.ip,
@@ -146,7 +147,7 @@ export class AuthService {
       expiresAt,
     });
 
-    await eventBus.emit("auth.token_refreshed", {
+    eventBus.emit("auth.token_refreshed", {
       tenantId,
       userId: user.id,
     });
@@ -169,7 +170,7 @@ export class AuthService {
     await this.repo.revokeRefreshToken(tokenHash, tenantId);
 
     if (stored) {
-      await eventBus.emit("auth.logout", {
+      eventBus.emit("auth.logout", {
         tenantId,
         userId: stored.user_id,
       });

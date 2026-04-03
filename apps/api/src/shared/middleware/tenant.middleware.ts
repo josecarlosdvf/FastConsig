@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { getContext } from "@fastconsig/core";
 
 export interface TenantRequest extends Request {
   tenantId: string;
@@ -17,5 +18,10 @@ export function tenantMiddleware(
   }
 
   (req as TenantRequest).tenantId = tenantId;
+
+  // Enrich the request context so all logs downstream automatically include tenantId
+  const ctx = getContext();
+  if (ctx) ctx.tenantId = tenantId;
+
   next();
 }

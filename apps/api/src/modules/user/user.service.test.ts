@@ -89,6 +89,7 @@ describe("UserService", () => {
       eventBus.on("user.created", handler);
 
       await service.create(createData, TENANT_ID);
+      await eventBus.flush();
 
       expect(handler).toHaveBeenCalledWith(
         expect.objectContaining({ tenantId: TENANT_ID, userId: mockUser.id })

@@ -91,6 +91,7 @@ describe("AuthService", () => {
       eventBus.on("auth.login", handler);
 
       await service.login("admin@example.com", "senha-correta", TENANT_ID);
+      await eventBus.flush();
 
       expect(handler).toHaveBeenCalledWith(
         expect.objectContaining({ tenantId: TENANT_ID, userId: mockUser.id })
@@ -176,6 +177,7 @@ describe("AuthService", () => {
       eventBus.on("auth.token_refreshed", handler);
 
       await service.refresh("valid-raw-token", TENANT_ID);
+      await eventBus.flush();
 
       expect(handler).toHaveBeenCalledWith(
         expect.objectContaining({ tenantId: TENANT_ID, userId: mockUser.id })
@@ -222,6 +224,7 @@ describe("AuthService", () => {
       eventBus.on("auth.logout", handler);
 
       await service.logout("some-token", TENANT_ID);
+      await eventBus.flush();
 
       expect(handler).toHaveBeenCalledWith(
         expect.objectContaining({ tenantId: TENANT_ID, userId: mockUser.id })

@@ -44,7 +44,7 @@ export class UserService {
       tenant_id: tenantId,
     });
 
-    await eventBus.emit("user.created", {
+    eventBus.emit("user.created", {
       tenantId,
       userId: user.id,
       email: user.email,
@@ -62,7 +62,7 @@ export class UserService {
     await this.findById(id, tenantId);
     const user = await this.repo.update(id, tenantId, data);
 
-    await eventBus.emit("user.updated", { tenantId, userId: id });
+    eventBus.emit("user.updated", { tenantId, userId: id });
 
     return user;
   }
@@ -71,7 +71,7 @@ export class UserService {
     await this.findById(id, tenantId);
     const result = await this.repo.softDelete(id, tenantId);
 
-    await eventBus.emit("user.deleted", { tenantId, userId: id });
+    eventBus.emit("user.deleted", { tenantId, userId: id });
 
     return result;
   }

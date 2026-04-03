@@ -24,6 +24,17 @@ export interface Plugin {
   readonly description?: string;
   /** Semantic version */
   readonly version: string;
+  /**
+   * Declared platform permissions the plugin requires.
+   *
+   * These are purely declarative today — they document intent, show up in
+   * bootstrap logs, and establish the catalogue for future runtime enforcement
+   * (e.g. admin approval flow, permission checks in service calls).
+   *
+   * @example
+   * permissions: ["user:read", "user:write", "tenant:read"]
+   */
+  readonly permissions?: string[];
   /** Called once during application startup */
   register(app: Application): void | Promise<void>;
   /**
@@ -67,7 +78,14 @@ export class PluginRegistry {
         }
       }
 
-      log.info({ plugin: plugin.name, version: plugin.version }, "Plugin registrado");
+      log.info(
+        {
+          plugin: plugin.name,
+          version: plugin.version,
+          permissions: plugin.permissions ?? [],
+        },
+        "Plugin registrado"
+      );
     }
   }
 

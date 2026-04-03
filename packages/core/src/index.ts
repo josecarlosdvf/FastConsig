@@ -8,3 +8,9 @@ export {
   type AppEventPayload,
 } from "./event-bus";
 export { createLogger, logger } from "./logger";
+export {
+  requestContext,
+  getContext,
+  runWithContext,
+  type RequestContext,
+} from "./request-context";

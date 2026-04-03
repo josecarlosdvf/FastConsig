@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { getContext } from "@fastconsig/core";
 import { TenantRequest } from "./tenant.middleware";
 
 export interface AuthRequest extends TenantRequest {
@@ -34,6 +35,10 @@ export function authMiddleware(
     (req as AuthRequest).userId = payload.sub;
     (req as AuthRequest).userRole = payload.role;
     (req as AuthRequest).tenantId = payload.tenantId;
+
+    // Enrich the request context so all logs downstream automatically include userId
+    const ctx = getContext();
+    if (ctx) ctx.userId = payload.sub;
 
     next();
   } catch {
