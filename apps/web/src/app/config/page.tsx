@@ -90,7 +90,10 @@ export default function ConfigPage(): JSX.Element {
   }
 
   useEffect(() => {
-    load().catch(() => undefined);
+    load().catch((err: unknown) => {
+      const message = err instanceof Error ? err.message : "Falha ao carregar configurações.";
+      setError(message);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope]);
 

@@ -181,7 +181,7 @@ export function SchemaForm<Shape extends ZodRawShape>({
     <Form
       title={title}
       description={description}
-      onSubmit={(e) => void handleSubmit(e)}
+      onSubmit={(e) => handleSubmit(e)}
       footer={footer}
       noValidate
     >
