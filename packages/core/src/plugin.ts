@@ -1,5 +1,8 @@
 import { Application } from "express";
 import { AppEventName, AppEventPayload, EventBus, eventBus as defaultEventBus } from "./event-bus";
+import { createLogger } from "./logger";
+
+const log = createLogger("plugin-registry");
 
 /**
  * A plugin extends the application with new capabilities.
@@ -64,7 +67,7 @@ export class PluginRegistry {
         }
       }
 
-      console.log(`🔌 Plugin "${plugin.name}@${plugin.version}" registrado.`);
+      log.info({ plugin: plugin.name, version: plugin.version }, "Plugin registrado");
     }
   }
 

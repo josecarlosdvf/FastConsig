@@ -1,9 +1,10 @@
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { eventBus } from "@fastconsig/core";
+import { eventBus, createLogger } from "@fastconsig/core";
 import { AuthRepository } from "./auth.repository";
 
+const log = createLogger("auth-service");
 const BCRYPT_ROUNDS = 12;
 const REFRESH_TOKEN_BYTES = 64;
 
@@ -18,7 +19,10 @@ function hashToken(token: string): string {
 
 function parseExpiresIn(value: string): number {
   const match = /^(\d+)([smhd])$/.exec(value);
-  if (!match) return 7 * 24 * 3600;
+  if (!match) {
+    log.warn({ value }, "parseExpiresIn: formato inválido, usando fallback de 7 dias");
+    return 7 * 24 * 3600;
+  }
   const amount = parseInt(match[1], 10);
   const unit = match[2];
   const multipliers: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 };

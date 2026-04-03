@@ -43,11 +43,4 @@ export class SessionRepository {
       data: { revoked_at: new Date() },
     });
   }
-
-  async touchLastUsed(sessionId: string, tenantId: string) {
-    return createTenantClient(tenantId).refreshToken.updateMany({
-      where: { id: sessionId },
-      data: { last_used_at: new Date() },
-    });
-  }
 }

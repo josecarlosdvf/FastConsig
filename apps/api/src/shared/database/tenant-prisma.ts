@@ -51,6 +51,11 @@ export function scopeOperation({ operation, args, query }: OperationContext, ten
  * receives `tenant_id` in the where/data clause. This is a structural safety
  * net — even if a developer forgets to add the filter, data will never leak
  * across tenants.
+ *
+ * ⚠️  RAW QUERIES ARE NOT PROTECTED.
+ * Methods like `$queryRaw` and `$executeRaw` bypass this extension entirely.
+ * Any raw query against tenant-scoped tables MUST include `AND tenant_id = $1`
+ * manually. Failing to do so will leak data across tenants.
  */
 export function createTenantClient(tenantId: string) {
   return prisma.$extends({

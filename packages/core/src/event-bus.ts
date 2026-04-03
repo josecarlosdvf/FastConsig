@@ -1,8 +1,17 @@
+import { createLogger } from "./logger";
+
+const log = createLogger("event-bus");
+
 /**
  * Typed in-process event bus.
  *
  * Defines the canonical set of domain events emitted by the application.
  * Plugins can subscribe to these events via their `hooks` field.
+ *
+ * ⚠️  Raw Prisma queries (`$queryRaw`, `$executeRaw`) bypass the tenant-scoped
+ * client and do NOT have tenant_id automatically injected. Developers using raw
+ * queries MUST add `WHERE tenant_id = $1` manually. Prefer the typed client
+ * methods which are protected by `createTenantClient`.
  *
  * Usage:
  *   import { eventBus } from "@fastconsig/core";
@@ -73,7 +82,7 @@ export class EventBus {
         if (result instanceof Promise) promises.push(result);
       } catch (err) {
         // Event handlers must not crash the main flow
-        console.error(`[EventBus] Error in handler for "${event}":`, err);
+        log.error({ event, err }, `Error in event handler for "${event}"`);
       }
     }
 

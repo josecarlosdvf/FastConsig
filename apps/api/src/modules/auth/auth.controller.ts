@@ -10,6 +10,9 @@ export class AuthController {
     const { tenantId } = req as TenantRequest;
     const { email, password } = loginSchema.parse(req.body);
     const ctx = {
+      // x-forwarded-for is used for audit logging only, not for security-critical decisions.
+      // Ensure your reverse proxy is configured to overwrite this header with the real IP
+      // (e.g. nginx `proxy_set_header X-Forwarded-For $remote_addr`).
       ip: (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim()
         ?? req.socket.remoteAddress,
       deviceInfo: req.headers["user-agent"],
