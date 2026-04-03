@@ -1,4 +1,4 @@
-import { prisma } from "../../shared/database/prisma";
+import { createTenantClient } from "../../shared/database/tenant-prisma";
 
 export interface CreateUserData {
   name: string;
@@ -8,52 +8,46 @@ export interface CreateUserData {
   tenant_id: string;
 }
 
+const USER_PUBLIC_FIELDS = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  created_at: true,
+  updated_at: true,
+} as const;
+
 export class UserRepository {
+  // tenant_id is injected automatically by the scoped client — no manual filtering needed
+  private db(tenantId: string) {
+    return createTenantClient(tenantId);
+  }
+
   async findAll(tenantId: string) {
-    return prisma.user.findMany({
-      where: { tenant_id: tenantId, is_active: true },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        created_at: true,
-        updated_at: true,
-      },
+    return this.db(tenantId).user.findMany({
+      where: { is_active: true },
+      select: USER_PUBLIC_FIELDS,
     });
   }
 
   async findById(id: string, tenantId: string) {
-    return prisma.user.findFirst({
-      where: { id, tenant_id: tenantId, is_active: true },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        created_at: true,
-        updated_at: true,
-      },
+    return this.db(tenantId).user.findFirst({
+      where: { id, is_active: true },
+      select: USER_PUBLIC_FIELDS,
     });
   }
 
   async findByEmail(email: string, tenantId: string) {
-    return prisma.user.findFirst({
-      where: { email, tenant_id: tenantId, is_active: true },
+    return this.db(tenantId).user.findFirst({
+      where: { email, is_active: true },
     });
   }
 
   async create(data: CreateUserData) {
-    return prisma.user.create({
-      data,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        created_at: true,
-        updated_at: true,
-      },
+    const { tenant_id, ...rest } = data;
+    return this.db(tenant_id).user.create({
+      data: rest,
+      select: USER_PUBLIC_FIELDS,
     });
   }
 
@@ -62,23 +56,16 @@ export class UserRepository {
     tenantId: string,
     data: Partial<Pick<CreateUserData, "name" | "email" | "role">>
   ) {
-    return prisma.user.update({
-      where: { id, tenant_id: tenantId },
+    return this.db(tenantId).user.update({
+      where: { id },
       data: { ...data, updated_at: new Date() },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        created_at: true,
-        updated_at: true,
-      },
+      select: USER_PUBLIC_FIELDS,
     });
   }
 
   async softDelete(id: string, tenantId: string) {
-    return prisma.user.update({
-      where: { id, tenant_id: tenantId },
+    return this.db(tenantId).user.update({
+      where: { id },
       data: { is_active: false, updated_at: new Date() },
     });
   }

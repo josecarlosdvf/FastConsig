@@ -12,4 +12,12 @@ router.post("/login", authRateLimiter, tenantMiddleware, (req, res) =>
   controller.login(req, res)
 );
 
+router.post("/refresh", authRateLimiter, tenantMiddleware, (req, res) =>
+  controller.refresh(req, res)
+);
+
+router.post("/logout", tenantMiddleware, (req, res) =>
+  controller.logout(req, res)
+);
+
 export { router as authRouter };

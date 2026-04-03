@@ -1,12 +1,13 @@
-import express from "express";
+import express, { Application } from "express";
 import cors from "cors";
 import { tenantMiddleware } from "./shared/middleware/tenant.middleware";
 import { errorHandler } from "./shared/middleware/error.middleware";
 import { authRouter } from "./modules/auth/auth.router";
 import { userRouter } from "./modules/user/user.router";
 import { tenantRouter } from "./modules/tenant/tenant.router";
+import { pluginRegistry } from "@fastconsig/core";
 
-export function createApp() {
+export async function createApp(): Promise<Application> {
   const app = express();
 
   app.use(cors());
@@ -19,6 +20,9 @@ export function createApp() {
   app.use("/api/auth", authRouter);
   app.use("/api/tenants", tenantRouter);
   app.use("/api/users", tenantMiddleware, userRouter);
+
+  // Bootstrap registered plugins
+  await pluginRegistry.bootstrap(app);
 
   app.use(errorHandler);
 

@@ -1,0 +1,13 @@
+import type { Config } from "jest";
+
+const config: Config = {
+  preset: "ts-jest",
+  testEnvironment: "node",
+  testMatch: ["**/*.test.ts"],
+  moduleNameMapper: {
+    "^@fastconsig/(.*)$": "<rootDir>/../../packages/$1/src",
+  },
+  clearMocks: true,
+};
+
+export default config;

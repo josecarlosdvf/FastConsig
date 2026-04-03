@@ -1,4 +1,5 @@
 import { prisma } from "../../shared/database/prisma";
+import { createTenantClient } from "../../shared/database/tenant-prisma";
 
 export interface AuthCredentials {
   email: string;
@@ -6,10 +7,57 @@ export interface AuthCredentials {
   tenantId: string;
 }
 
+export interface StoreRefreshTokenData {
+  userId: string;
+  tenantId: string;
+  tokenHash: string;
+  expiresAt: Date;
+}
+
 export class AuthRepository {
   async findUserByEmail(email: string, tenantId: string) {
     return prisma.user.findFirst({
       where: { email, tenant_id: tenantId, is_active: true },
+    });
+  }
+
+  async findUserById(userId: string, tenantId: string) {
+    return prisma.user.findFirst({
+      where: { id: userId, tenant_id: tenantId, is_active: true },
+    });
+  }
+
+  async storeRefreshToken(data: StoreRefreshTokenData) {
+    return createTenantClient(data.tenantId).refreshToken.create({
+      data: {
+        user_id: data.userId,
+        token_hash: data.tokenHash,
+        expires_at: data.expiresAt,
+      },
+    });
+  }
+
+  async findRefreshToken(tokenHash: string, tenantId: string) {
+    return createTenantClient(tenantId).refreshToken.findFirst({
+      where: {
+        token_hash: tokenHash,
+        revoked_at: null,
+        expires_at: { gt: new Date() },
+      },
+    });
+  }
+
+  async revokeRefreshToken(tokenHash: string, tenantId: string) {
+    return createTenantClient(tenantId).refreshToken.updateMany({
+      where: { token_hash: tokenHash },
+      data: { revoked_at: new Date() },
+    });
+  }
+
+  async revokeAllUserRefreshTokens(userId: string, tenantId: string) {
+    return createTenantClient(tenantId).refreshToken.updateMany({
+      where: { user_id: userId, revoked_at: null },
+      data: { revoked_at: new Date() },
     });
   }
 }

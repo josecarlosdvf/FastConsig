@@ -18,7 +18,8 @@ model Tenant {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  users User[]
+  users         User[]
+  refreshTokens RefreshToken[]
 
   @@map("tenants")
 }
@@ -34,10 +35,28 @@ model User {
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 
-  tenant Tenant @relation(fields: [tenant_id], references: [id])
+  tenant        Tenant         @relation(fields: [tenant_id], references: [id])
+  refreshTokens RefreshToken[]
 
   @@unique([email, tenant_id])
   @@map("users")
+}
+
+model RefreshToken {
+  id          String    @id @default(uuid())
+  tenant_id   String
+  user_id     String
+  token_hash  String    @unique
+  expires_at  DateTime
+  revoked_at  DateTime?
+  created_at  DateTime  @default(now())
+
+  user   User   @relation(fields: [user_id], references: [id])
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([token_hash])
+  @@index([user_id, tenant_id])
+  @@map("refresh_tokens")
 }
 
 enum UserRole {
