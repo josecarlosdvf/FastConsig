@@ -34,3 +34,49 @@ jobs:
 
       - name: Test
         run: npm run test
+
+  prisma-schema:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Validates the Prisma schema file is syntactically correct.
+      # This catches schema typos, invalid field types, and broken relations
+      # before anyone spins up a database.
+      - name: Validate Prisma schema
+        working-directory: apps/api
+        run: npx prisma validate
+
+      # Checks that every schema change has a corresponding migration file.
+      # If a developer edited schema.prisma but forgot to run `prisma migrate dev`,
+      # this step will fail — preventing schema drift between code and database.
+      #
+      # DATABASE_URL is set to a dummy value because `migrate diff` only needs
+      # to compare the schema file against the migrations folder (no live DB
+      # required for this check).
+      - name: Check for migration drift
+        working-directory: apps/api
+        env:
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_placeholder"
+        run: |
+          npx prisma migrate diff \
+            --from-migrations ./prisma/migrations \
+            --to-schema-datamodel ./prisma/schema.prisma \
+            --shadow-database-url "$DATABASE_URL" \
+            --exit-code || \
+          (echo "❌ Schema has changed but no migration was generated." && \
+           echo "   Run: npm run db:migrate -- --name <migration_name>" && \
+           echo "   Then commit the generated migration file." && \
+           exit 1)

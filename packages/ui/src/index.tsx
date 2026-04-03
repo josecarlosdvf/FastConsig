@@ -16,4 +16,14 @@ export type {
 } from "./layout";
 export { Form, FormSection, FormAlert } from "./form";
 export type { FormProps, FormSectionProps, FormAlertProps } from "./form";
+export { SchemaForm } from "./schema-form";
+export type {
+  SchemaFormProps,
+  FieldConfig,
+  FieldMap,
+  TextField,
+  SelectField,
+  TextareaField,
+  CheckboxField,
+} from "./schema-form";
 export * as tokens from "./tokens";

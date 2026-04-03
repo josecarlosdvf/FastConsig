@@ -32,7 +32,29 @@ module.exports = {
       },
     ],
 
-    // ─── Type safety ───────────────────────────────────────────────────────
+    // ─── Soft delete enforcement ───────────────────────────────────────────
+    // Real `.delete()` / `.deleteMany()` calls bypass the soft-delete pattern.
+    // All removal operations MUST go through softDelete() in the repository,
+    // which sets `is_active = false` (and eventually `deleted_at`).
+    //
+    // The only place that is allowed to call real Prisma delete is
+    // database migration scripts — never application code.
+    "no-restricted-syntax": [
+      "error",
+      {
+        selector: "MemberExpression[property.name='delete'][object.type='CallExpression']",
+        message:
+          "Do not call .delete() on a Prisma model. " +
+          "Use the repository's softDelete() method which sets is_active=false instead.",
+      },
+      {
+        selector: "MemberExpression[property.name='deleteMany'][object.type='CallExpression']",
+        message:
+          "Do not call .deleteMany() on a Prisma model. " +
+          "Implement a soft-delete bulk operation in the repository instead.",
+      },
+    ],
+
     "@typescript-eslint/no-explicit-any": "error",
     "@typescript-eslint/no-unsafe-assignment": "warn",
     "@typescript-eslint/no-unsafe-member-access": "warn",

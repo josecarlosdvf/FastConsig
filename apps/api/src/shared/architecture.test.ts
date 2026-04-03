@@ -154,7 +154,18 @@ describe("Governance: module completeness — controller / service / repository 
   }
 });
 
-// ─── 5. Controllers must not call schema.parse() directly ─────────────────────
+// ─── 6. Soft delete: repositories must not call .delete() or .deleteMany() ───
+
+describe("Governance: soft delete — repositories must not call .delete() or .deleteMany()", () => {
+  it.each(repositoryFiles)("%s must use softDelete() — not .delete() or .deleteMany()", (file) => {
+    const content = readFile(file);
+    // Prisma model chained .delete( / .deleteMany( calls
+    // e.g. db(tenantId).user.delete( or prisma.user.deleteMany(
+    expect(content).not.toMatch(/\.\s*delete\s*\(/);
+    expect(content).not.toMatch(/\.\s*deleteMany\s*\(/);
+  });
+});
+
 
 describe("Governance: controllers must not call schema.parse() (use validate middleware)", () => {
   const controllerFiles = allFiles.filter(
