@@ -10,6 +10,7 @@ Monólito modular, multitenancy-first, pronto para escalar.
 | ORM        | Prisma                            |
 | Banco      | PostgreSQL 15                     |
 | Frontend   | Next.js 14 (App Router) · Tailwind|
+| UI         | Design system customizado (packages/ui) |
 | Monorepo   | Turborepo                         |
 | Infra      | Docker · Docker Compose           |
 | CI/CD      | GitHub Actions                    |

@@ -63,7 +63,7 @@ export class UserRepository {
     data: Partial<Pick<CreateUserData, "name" | "email" | "role">>
   ) {
     return prisma.user.update({
-      where: { id },
+      where: { id, tenant_id: tenantId },
       data: { ...data, updated_at: new Date() },
       select: {
         id: true,
@@ -78,7 +78,7 @@ export class UserRepository {
 
   async softDelete(id: string, tenantId: string) {
     return prisma.user.update({
-      where: { id },
+      where: { id, tenant_id: tenantId },
       data: { is_active: false, updated_at: new Date() },
     });
   }

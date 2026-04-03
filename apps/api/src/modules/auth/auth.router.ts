@@ -3,11 +3,12 @@ import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { AuthRepository } from "./auth.repository";
 import { tenantMiddleware } from "../../shared/middleware/tenant.middleware";
+import { authRateLimiter } from "../../shared/middleware/rate-limit.middleware";
 
 const router = Router();
 const controller = new AuthController(new AuthService(new AuthRepository()));
 
-router.post("/login", tenantMiddleware, (req, res) =>
+router.post("/login", authRateLimiter, tenantMiddleware, (req, res) =>
   controller.login(req, res)
 );
 

@@ -1,4 +1,6 @@
 node_modules
 dist
 .next
-*.js
+.turbo
+*.env
+!.env.example

@@ -3,10 +3,12 @@ import { UserController } from "./user.controller";
 import { UserService } from "./user.service";
 import { UserRepository } from "./user.repository";
 import { authMiddleware } from "../../shared/middleware/auth.middleware";
+import { apiRateLimiter } from "../../shared/middleware/rate-limit.middleware";
 
 const router = Router();
 const controller = new UserController(new UserService(new UserRepository()));
 
+router.use(apiRateLimiter);
 router.use(authMiddleware);
 
 router.get("/", (req, res) => controller.findAll(req, res));

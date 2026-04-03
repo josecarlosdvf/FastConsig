@@ -53,7 +53,7 @@ export class TenantRepository {
 
   async update(id: string, data: Partial<CreateTenantData>) {
     return prisma.tenant.update({
-      where: { id },
+      where: { id, is_active: true },
       data: { ...data, updated_at: new Date() },
       select: {
         id: true,
