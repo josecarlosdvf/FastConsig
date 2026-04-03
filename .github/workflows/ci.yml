@@ -64,8 +64,8 @@ jobs:
       # this step will fail — preventing schema drift between code and database.
       #
       # DATABASE_URL is set to a dummy value because `migrate diff` only needs
-      # to compare the schema file against the migrations folder (no live DB
-      # required for this check).
+      # to compare the schema file against the migrations folder. This URL is
+      # parsed by Prisma for configuration but is never actually connected to.
       - name: Check for migration drift
         working-directory: apps/api
         env:

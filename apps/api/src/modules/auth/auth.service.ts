@@ -23,11 +23,9 @@ function parseExpiresIn(value: string): number {
     return 7 * 24 * 3600;
   }
   const amount = parseInt(match[1], 10);
-  const unit = match[2];
-  const SECONDS_PER_UNIT: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 };
-  // Default to 1 hour (3600s) when unit is unrecognised — shouldn't happen given the regex
-  const SECONDS_PER_HOUR = 3600;
-  return amount * (SECONDS_PER_UNIT[unit] ?? SECONDS_PER_HOUR);
+  const unit = match[2] as "s" | "m" | "h" | "d";
+  const SECONDS_PER_UNIT: Record<"s" | "m" | "h" | "d", number> = { s: 1, m: 60, h: 3600, d: 86400 };
+  return amount * SECONDS_PER_UNIT[unit];
 }
 
 export class AuthService {
