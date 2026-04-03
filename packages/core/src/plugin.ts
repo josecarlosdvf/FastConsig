@@ -1,4 +1,5 @@
 import { Application } from "express";
+import { AppEventName, AppEventPayload, EventBus, eventBus as defaultEventBus } from "./event-bus";
 
 /**
  * A plugin extends the application with new capabilities.
@@ -9,6 +10,9 @@ import { Application } from "express";
  * - plugins communicate with the core only via the Service layer
  * - plugins never import from another plugin's internal modules
  * - all plugin routes must be prefixed with /api/plugins/:name/
+ *
+ * Hooks allow plugins to react to domain events without coupling to the
+ * emitting module. The registry subscribes the hooks automatically on bootstrap.
  */
 export interface Plugin {
   /** Unique machine-readable identifier (kebab-case) */
@@ -19,6 +23,18 @@ export interface Plugin {
   readonly version: string;
   /** Called once during application startup */
   register(app: Application): void | Promise<void>;
+  /**
+   * Optional event hooks. Each key is an event name; the value is a handler
+   * that will be subscribed to the event bus automatically on bootstrap.
+   *
+   * @example
+   * hooks: {
+   *   "user.created": ({ tenantId, email }) => sendWelcomeEmail(email),
+   * }
+   */
+  hooks?: Partial<{
+    [K in AppEventName]: (payload: AppEventPayload<K>) => void | Promise<void>;
+  }>;
 }
 
 export class PluginRegistry {
@@ -34,9 +50,20 @@ export class PluginRegistry {
     return this;
   }
 
-  async bootstrap(app: Application): Promise<void> {
+  async bootstrap(app: Application, bus: EventBus = defaultEventBus): Promise<void> {
     for (const plugin of this.plugins.values()) {
       await plugin.register(app);
+
+      // Subscribe any declared event hooks to the event bus
+      if (plugin.hooks) {
+        for (const [event, handler] of Object.entries(plugin.hooks) as [
+          AppEventName,
+          (payload: AppEventPayload<AppEventName>) => void | Promise<void>,
+        ][]) {
+          bus.on(event, handler);
+        }
+      }
+
       console.log(`🔌 Plugin "${plugin.name}@${plugin.version}" registrado.`);
     }
   }

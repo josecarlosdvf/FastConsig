@@ -1,5 +1,6 @@
 import { AuthService } from "./auth.service";
 import { AuthRepository } from "./auth.repository";
+import { eventBus } from "@fastconsig/core";
 
 jest.mock("./auth.repository");
 jest.mock("bcrypt");
@@ -36,6 +37,7 @@ describe("AuthService", () => {
 
   beforeEach(() => {
     MockAuthRepository.mockClear();
+    eventBus.clear();
     service = new AuthService(new MockAuthRepository());
     repo = MockAuthRepository.mock.instances[0] as jest.Mocked<AuthRepository>;
 
@@ -63,6 +65,36 @@ describe("AuthService", () => {
       expect(result.user.email).toBe("admin@example.com");
       expect(result.user).not.toHaveProperty("password");
       expect(repo.storeRefreshToken).toHaveBeenCalledTimes(1);
+    });
+
+    it("deve passar device_info e ip para storeRefreshToken", async () => {
+      repo.findUserByEmail.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      repo.storeRefreshToken.mockResolvedValue({} as never);
+
+      await service.login("admin@example.com", "senha-correta", TENANT_ID, {
+        ip: "192.168.1.1",
+        deviceInfo: "Mozilla/5.0",
+      });
+
+      expect(repo.storeRefreshToken).toHaveBeenCalledWith(
+        expect.objectContaining({ ipAddress: "192.168.1.1", deviceInfo: "Mozilla/5.0" })
+      );
+    });
+
+    it("deve emitir evento auth.login em login válido", async () => {
+      repo.findUserByEmail.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      repo.storeRefreshToken.mockResolvedValue({} as never);
+
+      const handler = jest.fn();
+      eventBus.on("auth.login", handler);
+
+      await service.login("admin@example.com", "senha-correta", TENANT_ID);
+
+      expect(handler).toHaveBeenCalledWith(
+        expect.objectContaining({ tenantId: TENANT_ID, userId: mockUser.id })
+      );
     });
 
     it("deve lançar 401 quando o usuário não existe", async () => {
@@ -102,6 +134,9 @@ describe("AuthService", () => {
         token_hash: "hashed-token",
         expires_at: new Date(Date.now() + 3600_000),
         revoked_at: null,
+        device_info: null,
+        ip_address: null,
+        last_used_at: null,
         created_at: new Date(),
       };
 
@@ -118,6 +153,35 @@ describe("AuthService", () => {
       expect(repo.storeRefreshToken).toHaveBeenCalledTimes(1);
     });
 
+    it("deve emitir evento auth.token_refreshed", async () => {
+      const storedToken = {
+        id: "rt-1",
+        user_id: mockUser.id,
+        tenant_id: TENANT_ID,
+        token_hash: "hashed-token",
+        expires_at: new Date(Date.now() + 3600_000),
+        revoked_at: null,
+        device_info: null,
+        ip_address: null,
+        last_used_at: null,
+        created_at: new Date(),
+      };
+
+      repo.findRefreshToken.mockResolvedValue(storedToken);
+      repo.findUserById.mockResolvedValue(mockUser);
+      repo.revokeRefreshToken.mockResolvedValue({} as never);
+      repo.storeRefreshToken.mockResolvedValue({} as never);
+
+      const handler = jest.fn();
+      eventBus.on("auth.token_refreshed", handler);
+
+      await service.refresh("valid-raw-token", TENANT_ID);
+
+      expect(handler).toHaveBeenCalledWith(
+        expect.objectContaining({ tenantId: TENANT_ID, userId: mockUser.id })
+      );
+    });
+
     it("deve lançar 401 para token inválido ou não encontrado", async () => {
       repo.findRefreshToken.mockResolvedValue(null);
 
@@ -130,10 +194,39 @@ describe("AuthService", () => {
   describe("logout", () => {
     it("deve revogar o refresh token", async () => {
       repo.revokeRefreshToken.mockResolvedValue({} as never);
+      repo.findRefreshToken.mockResolvedValue(null);
 
       await service.logout("some-token", TENANT_ID);
 
       expect(repo.revokeRefreshToken).toHaveBeenCalledTimes(1);
     });
+
+    it("deve emitir evento auth.logout quando token é encontrado", async () => {
+      const storedToken = {
+        id: "rt-1",
+        user_id: mockUser.id,
+        tenant_id: TENANT_ID,
+        token_hash: "hashed-token",
+        expires_at: new Date(Date.now() + 3600_000),
+        revoked_at: null,
+        device_info: null,
+        ip_address: null,
+        last_used_at: null,
+        created_at: new Date(),
+      };
+
+      repo.findRefreshToken.mockResolvedValue(storedToken);
+      repo.revokeRefreshToken.mockResolvedValue({} as never);
+
+      const handler = jest.fn();
+      eventBus.on("auth.logout", handler);
+
+      await service.logout("some-token", TENANT_ID);
+
+      expect(handler).toHaveBeenCalledWith(
+        expect.objectContaining({ tenantId: TENANT_ID, userId: mockUser.id })
+      );
+    });
   });
 });
+

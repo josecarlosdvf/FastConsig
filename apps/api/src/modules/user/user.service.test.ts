@@ -1,5 +1,6 @@
 import { UserService } from "./user.service";
 import { UserRepository } from "./user.repository";
+import { eventBus } from "@fastconsig/core";
 
 jest.mock("./user.repository");
 
@@ -11,6 +12,7 @@ describe("UserService", () => {
 
   beforeEach(() => {
     MockUserRepository.mockClear();
+    eventBus.clear();
     service = new UserService(new MockUserRepository());
     repo = MockUserRepository.mock.instances[0] as jest.Mocked<UserRepository>;
   });
@@ -77,6 +79,20 @@ describe("UserService", () => {
       const createdWith = repo.create.mock.calls[0][0];
       expect(createdWith.password).not.toBe(createData.password);
       expect(createdWith.tenant_id).toBe(TENANT_ID);
+    });
+
+    it("deve emitir evento user.created após criação", async () => {
+      repo.findByEmail.mockResolvedValue(null);
+      repo.create.mockResolvedValue({ ...mockUser, email: createData.email });
+
+      const handler = jest.fn();
+      eventBus.on("user.created", handler);
+
+      await service.create(createData, TENANT_ID);
+
+      expect(handler).toHaveBeenCalledWith(
+        expect.objectContaining({ tenantId: TENANT_ID, userId: mockUser.id })
+      );
     });
 
     it("deve lançar 409 quando e-mail já existe no tenant", async () => {

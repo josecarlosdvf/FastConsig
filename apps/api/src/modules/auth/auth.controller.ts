@@ -9,7 +9,12 @@ export class AuthController {
   async login(req: Request, res: Response): Promise<void> {
     const { tenantId } = req as TenantRequest;
     const { email, password } = loginSchema.parse(req.body);
-    const result = await this.service.login(email, password, tenantId);
+    const ctx = {
+      ip: (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim()
+        ?? req.socket.remoteAddress,
+      deviceInfo: req.headers["user-agent"],
+    };
+    const result = await this.service.login(email, password, tenantId, ctx);
     res.json(result);
   }
 

@@ -11,6 +11,8 @@ export interface StoreRefreshTokenData {
   tenantId: string;
   tokenHash: string;
   expiresAt: Date;
+  deviceInfo?: string;
+  ipAddress?: string;
 }
 
 export class AuthRepository {
@@ -32,6 +34,8 @@ export class AuthRepository {
         user_id: data.userId,
         token_hash: data.tokenHash,
         expires_at: data.expiresAt,
+        device_info: data.deviceInfo,
+        ip_address: data.ipAddress,
       },
     });
   }

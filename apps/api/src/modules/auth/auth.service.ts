@@ -1,10 +1,16 @@
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { eventBus } from "@fastconsig/core";
 import { AuthRepository } from "./auth.repository";
 
 const BCRYPT_ROUNDS = 12;
 const REFRESH_TOKEN_BYTES = 64;
+
+export interface LoginContext {
+  ip?: string;
+  deviceInfo?: string;
+}
 
 function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
@@ -32,7 +38,7 @@ export class AuthService {
   }
 
   private issueTokenPair(userId: string, role: string, tenantId: string) {
-    const { secret, refreshSecret } = this.getSecrets();
+    const { secret } = this.getSecrets();
 
     const expiresIn = process.env.JWT_EXPIRES_IN ?? "1h";
     const refreshExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN ?? "7d";
@@ -50,7 +56,7 @@ export class AuthService {
     return { accessToken, rawRefreshToken, tokenHash, expiresAt };
   }
 
-  async login(email: string, password: string, tenantId: string) {
+  async login(email: string, password: string, tenantId: string, ctx: LoginContext = {}) {
     const user = await this.repo.findUserByEmail(email, tenantId);
 
     if (!user) {
@@ -78,6 +84,15 @@ export class AuthService {
       tenantId: user.tenant_id,
       tokenHash,
       expiresAt,
+      deviceInfo: ctx.deviceInfo,
+      ipAddress: ctx.ip,
+    });
+
+    await eventBus.emit("auth.login", {
+      tenantId: user.tenant_id,
+      userId: user.id,
+      ip: ctx.ip,
+      deviceInfo: ctx.deviceInfo,
     });
 
     return {
@@ -97,9 +112,6 @@ export class AuthService {
     const stored = await this.repo.findRefreshToken(tokenHash, tenantId);
 
     if (!stored) {
-      // Token not found, revoked, or expired.
-      // If the hash exists but was already revoked, this may be a reuse attack.
-      // Safest response: reject without revealing which case.
       const err = new Error("Refresh token inválido, expirado ou já utilizado") as Error & {
         statusCode: number;
       };
@@ -130,6 +142,11 @@ export class AuthService {
       expiresAt,
     });
 
+    await eventBus.emit("auth.token_refreshed", {
+      tenantId,
+      userId: user.id,
+    });
+
     return {
       accessToken,
       refreshToken: rawRefreshToken,
@@ -144,6 +161,15 @@ export class AuthService {
 
   async logout(rawToken: string, tenantId: string) {
     const tokenHash = hashToken(rawToken);
+    const stored = await this.repo.findRefreshToken(tokenHash, tenantId);
     await this.repo.revokeRefreshToken(tokenHash, tenantId);
+
+    if (stored) {
+      await eventBus.emit("auth.logout", {
+        tenantId,
+        userId: stored.user_id,
+      });
+    }
   }
 }
+

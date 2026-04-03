@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import { eventBus } from "@fastconsig/core";
 import { UserRepository, CreateUserData } from "./user.repository";
 
 const BCRYPT_ROUNDS = 12;
@@ -37,11 +38,20 @@ export class UserService {
 
     const hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
 
-    return this.repo.create({
+    const user = await this.repo.create({
       ...data,
       password: hashedPassword,
       tenant_id: tenantId,
     });
+
+    await eventBus.emit("user.created", {
+      tenantId,
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    return user;
   }
 
   async update(
@@ -50,11 +60,19 @@ export class UserService {
     data: Partial<Pick<CreateUserData, "name" | "email" | "role">>
   ) {
     await this.findById(id, tenantId);
-    return this.repo.update(id, tenantId, data);
+    const user = await this.repo.update(id, tenantId, data);
+
+    await eventBus.emit("user.updated", { tenantId, userId: id });
+
+    return user;
   }
 
   async remove(id: string, tenantId: string) {
     await this.findById(id, tenantId);
-    return this.repo.softDelete(id, tenantId);
+    const result = await this.repo.softDelete(id, tenantId);
+
+    await eventBus.emit("user.deleted", { tenantId, userId: id });
+
+    return result;
   }
 }

@@ -5,17 +5,17 @@ type DataArgs = { data?: Record<string, unknown> | Record<string, unknown>[] };
 type ExtendedArgs = WhereArgs & DataArgs & Record<string, unknown>;
 type QueryFn = (args: ExtendedArgs) => Promise<unknown>;
 
-interface OperationContext {
+export interface OperationContext {
   operation: string;
   args: ExtendedArgs;
   query: QueryFn;
 }
 
-function injectTenantWhere(args: ExtendedArgs, tenantId: string): ExtendedArgs {
+export function injectTenantWhere(args: ExtendedArgs, tenantId: string): ExtendedArgs {
   return { ...args, where: { ...(args.where ?? {}), tenant_id: tenantId } };
 }
 
-function injectTenantCreate(args: ExtendedArgs, tenantId: string): ExtendedArgs {
+export function injectTenantCreate(args: ExtendedArgs, tenantId: string): ExtendedArgs {
   const data = args.data;
   if (Array.isArray(data)) {
     return { ...args, data: data.map((r) => ({ ...(r as Record<string, unknown>), tenant_id: tenantId })) };
@@ -31,7 +31,7 @@ const SCOPED_OPS = new Set([
   "update", "updateMany", "delete", "deleteMany", "upsert",
 ]);
 
-function scopeOperation({ operation, args, query }: OperationContext, tenantId: string): Promise<unknown> {
+export function scopeOperation({ operation, args, query }: OperationContext, tenantId: string): Promise<unknown> {
   let scopedArgs = args;
 
   if (SCOPED_OPS.has(operation)) {

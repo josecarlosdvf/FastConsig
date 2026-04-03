@@ -43,13 +43,16 @@ model User {
 }
 
 model RefreshToken {
-  id          String    @id @default(uuid())
-  tenant_id   String
-  user_id     String
-  token_hash  String    @unique
-  expires_at  DateTime
-  revoked_at  DateTime?
-  created_at  DateTime  @default(now())
+  id           String    @id @default(uuid())
+  tenant_id    String
+  user_id      String
+  token_hash   String    @unique
+  expires_at   DateTime
+  revoked_at   DateTime?
+  device_info  String?
+  ip_address   String?
+  last_used_at DateTime?
+  created_at   DateTime  @default(now())
 
   user   User   @relation(fields: [user_id], references: [id])
   tenant Tenant @relation(fields: [tenant_id], references: [id])
