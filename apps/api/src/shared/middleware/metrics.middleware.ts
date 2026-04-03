@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 
+/** Matches UUID v4 path segments (e.g. /550e8400-e29b-41d4-a716-446655440000) */
+const UUID_PATH_RE = /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+
 interface RouteStats {
   count: number;
   errors: number;
@@ -25,10 +28,9 @@ class MetricsStore {
   private routeKey(req: Request): string {
     // Use Express route pattern when available, fall back to replacing UUID-shaped
     // path segments (8-4-4-4-12 hex groups) with a `:id` placeholder.
-    const UUID_RE = /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
     const pattern =
       (req.route?.path as string | undefined) ??
-      req.path.replace(UUID_RE, "/:id");
+      req.path.replace(UUID_PATH_RE, "/:id");
     return `${req.method} ${pattern}`;
   }
 

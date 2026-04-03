@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { getContext } from "@fastconsig/core";
+import { getContext, createLogger } from "@fastconsig/core";
 import { TenantRequest } from "./tenant.middleware";
+
+const log = createLogger("auth-middleware");
 
 export interface AuthRequest extends TenantRequest {
   userId: string;
@@ -41,7 +43,8 @@ export function authMiddleware(
     if (ctx) ctx.userId = payload.sub;
 
     next();
-  } catch {
+  } catch (err) {
+    log.warn({ err }, "JWT verification failed");
     res.status(401).json({ error: "Token inválido ou expirado" });
   }
 }

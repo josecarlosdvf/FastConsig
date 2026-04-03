@@ -24,7 +24,7 @@ export function validate<T>(schema: ZodSchema<T>) {
       next(result.error);
       return;
     }
-    req.body = result.data as unknown;
+    req.body = result.data;
     next();
   };
 }
@@ -40,7 +40,7 @@ export function validateParams<T>(schema: ZodSchema<T>) {
       next(result.error);
       return;
     }
-    req.params = result.data as Record<string, string>;
+    req.params = result.data as unknown as Record<string, string>;
     next();
   };
 }
