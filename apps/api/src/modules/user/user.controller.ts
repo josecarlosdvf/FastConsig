@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { UserService } from "./user.service";
 import { AuthRequest } from "../../shared/middleware/auth.middleware";
-import { createUserSchema, updateUserSchema } from "./user.schema";
 
 export class UserController {
   constructor(private service: UserService) {}
@@ -20,15 +19,15 @@ export class UserController {
 
   async create(req: Request, res: Response): Promise<void> {
     const { tenantId } = req as AuthRequest;
-    const data = createUserSchema.parse(req.body);
-    const user = await this.service.create(data, tenantId);
+    // req.body is already validated by validate(createUserSchema) in the router
+    const user = await this.service.create(req.body, tenantId);
     res.status(201).json(user);
   }
 
   async update(req: Request, res: Response): Promise<void> {
     const { tenantId } = req as AuthRequest;
-    const data = updateUserSchema.parse(req.body);
-    const user = await this.service.update(req.params.id, tenantId, data);
+    // req.body is already validated by validate(updateUserSchema) in the router
+    const user = await this.service.update(req.params.id, tenantId, req.body);
     res.json(user);
   }
 

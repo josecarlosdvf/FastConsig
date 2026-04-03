@@ -32,6 +32,7 @@ model User {
   password     String
   role         UserRole @default(MEMBER)
   is_active    Boolean  @default(true)
+  updated_by   String?
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 

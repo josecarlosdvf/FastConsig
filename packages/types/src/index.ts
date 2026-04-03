@@ -1,3 +1,8 @@
+export type { UserRole, Permission } from "./permissions";
+export { ROLE_PERMISSIONS } from "./permissions";
+
+import type { UserRole } from "./permissions";
+
 export interface Tenant {
   id: string;
   name: string;
@@ -5,8 +10,6 @@ export interface Tenant {
   created_at: string;
   updated_at: string;
 }
-
-export type UserRole = "ADMIN" | "MEMBER";
 
 export interface User {
   id: string;

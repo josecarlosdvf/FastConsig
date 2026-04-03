@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { TenantService } from "./tenant.service";
-import { createTenantSchema, updateTenantSchema } from "./tenant.schema";
 
 export class TenantController {
   constructor(private service: TenantService) {}
@@ -16,14 +15,14 @@ export class TenantController {
   }
 
   async create(req: Request, res: Response): Promise<void> {
-    const data = createTenantSchema.parse(req.body);
-    const tenant = await this.service.create(data);
+    // req.body is already validated by validate(createTenantSchema) in the router
+    const tenant = await this.service.create(req.body);
     res.status(201).json(tenant);
   }
 
   async update(req: Request, res: Response): Promise<void> {
-    const data = updateTenantSchema.parse(req.body);
-    const tenant = await this.service.update(req.params.id, data);
+    // req.body is already validated by validate(updateTenantSchema) in the router
+    const tenant = await this.service.update(req.params.id, req.body);
     res.json(tenant);
   }
 }

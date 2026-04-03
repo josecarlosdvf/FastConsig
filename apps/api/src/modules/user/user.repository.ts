@@ -1,4 +1,5 @@
 import { createTenantClient } from "../../shared/database/tenant-prisma";
+import { getContext } from "@fastconsig/core";
 
 export interface CreateUserData {
   name: string;
@@ -45,8 +46,12 @@ export class UserRepository {
 
   async create(data: CreateUserData) {
     const { tenant_id, ...rest } = data;
+    const ctx = getContext();
     return this.db(tenant_id).user.create({
-      data: rest,
+      data: {
+        ...rest,
+        updated_by: ctx?.userId ?? null,
+      },
       select: USER_PUBLIC_FIELDS,
     });
   }
@@ -56,17 +61,27 @@ export class UserRepository {
     tenantId: string,
     data: Partial<Pick<CreateUserData, "name" | "email" | "role">>
   ) {
+    const ctx = getContext();
     return this.db(tenantId).user.update({
       where: { id },
-      data: { ...data, updated_at: new Date() },
+      data: {
+        ...data,
+        updated_at: new Date(),
+        updated_by: ctx?.userId ?? null,
+      },
       select: USER_PUBLIC_FIELDS,
     });
   }
 
   async softDelete(id: string, tenantId: string) {
+    const ctx = getContext();
     return this.db(tenantId).user.update({
       where: { id },
-      data: { is_active: false, updated_at: new Date() },
+      data: {
+        is_active: false,
+        updated_at: new Date(),
+        updated_by: ctx?.userId ?? null,
+      },
     });
   }
 }
