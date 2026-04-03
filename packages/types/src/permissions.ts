@@ -18,6 +18,8 @@ export type Permission =
   | "tenant:read"
   | "tenant:write"
   | "tenant:admin"
+  | "config:read"
+  | "config:write"
   | "session:read"
   | "session:delete";
 
@@ -38,12 +40,15 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "tenant:read",
     "tenant:write",
     "tenant:admin",
+    "config:read",
+    "config:write",
     "session:read",
     "session:delete",
   ],
   MEMBER: [
     "user:read",
     "tenant:read",
+    "config:read",
     "session:read",
     "session:delete",
   ],

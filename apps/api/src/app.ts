@@ -10,6 +10,7 @@ import { authRouter } from "./modules/auth/auth.router";
 import { userRouter } from "./modules/user/user.router";
 import { tenantRouter } from "./modules/tenant/tenant.router";
 import { sessionRouter } from "./modules/session/session.router";
+import { configRouter } from "./modules/config/config.router";
 
 export async function createApp(): Promise<Application> {
   const app = express();
@@ -33,6 +34,7 @@ export async function createApp(): Promise<Application> {
   app.use("/api/tenants", tenantRouter);
   app.use("/api/users", tenantMiddleware, userRouter);
   app.use("/api/sessions", sessionRouter);
+  app.use("/api/config", configRouter);
 
   // Bootstrap registered plugins
   await pluginRegistry.bootstrap(app);

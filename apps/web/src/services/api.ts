@@ -1,5 +1,9 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
+interface ApiErrorResponse {
+  error?: string;
+}
+
 async function apiFetch<T>(
   path: string,
   options: RequestInit & { tenantId?: string } = {}
@@ -21,7 +25,7 @@ async function apiFetch<T>(
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: res.statusText }));
+    const error = (await res.json().catch(() => ({ error: res.statusText }))) as ApiErrorResponse;
     throw new Error(error.error ?? "Erro desconhecido");
   }
 
@@ -56,4 +60,15 @@ export const api = {
 
   delete: <T>(path: string, options?: RequestInit & { tenantId?: string }) =>
     apiFetch<T>(path, { ...options, method: "DELETE" }),
+
+  patch: <T>(
+    path: string,
+    body: unknown,
+    options?: RequestInit & { tenantId?: string }
+  ) =>
+    apiFetch<T>(path, {
+      ...options,
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
 };

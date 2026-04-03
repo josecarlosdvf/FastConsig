@@ -1,5 +1,14 @@
 export type { UserRole, Permission } from "./permissions";
 export { ROLE_PERMISSIONS } from "./permissions";
+export type {
+  ConfigScope,
+  ConfigCategory,
+  ConfigType,
+  ConfigDefinition,
+  ConfigValue,
+  PageDefinition,
+  PluginRegistrationContract,
+} from "./config";
 
 import type { UserRole } from "./permissions";
 

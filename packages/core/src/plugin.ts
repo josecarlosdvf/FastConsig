@@ -1,6 +1,7 @@
 import { Application } from "express";
 import { AppEventName, AppEventPayload, EventBus, eventBus as defaultEventBus } from "./event-bus";
 import { createLogger } from "./logger";
+import { ConfigDefinition, PageDefinition, Permission } from "@fastconsig/types";
 
 const log = createLogger("plugin-registry");
 
@@ -34,7 +35,11 @@ export interface Plugin {
    * @example
    * permissions: ["user:read", "user:write", "tenant:read"]
    */
-  readonly permissions?: string[];
+  readonly permissions?: Permission[];
+  /** Optional config definitions contributed by this plugin */
+  readonly configs?: ConfigDefinition[];
+  /** Optional UI pages contributed by this plugin */
+  readonly pages?: PageDefinition[];
   /** Called once during application startup */
   register(app: Application): void | Promise<void>;
   /**
@@ -53,6 +58,8 @@ export interface Plugin {
 
 export class PluginRegistry {
   private readonly plugins = new Map<string, Plugin>();
+  private readonly configs = new Map<string, ConfigDefinition>();
+  private readonly pages = new Map<string, PageDefinition>();
 
   register(plugin: Plugin): this {
     if (this.plugins.has(plugin.name)) {
@@ -61,6 +68,21 @@ export class PluginRegistry {
       );
     }
     this.plugins.set(plugin.name, plugin);
+
+    for (const config of plugin.configs ?? []) {
+      if (this.configs.has(config.key)) {
+        throw new Error(`Config "${config.key}" já está registrada por outro plugin.`);
+      }
+      this.configs.set(config.key, config);
+    }
+
+    for (const page of plugin.pages ?? []) {
+      if (this.pages.has(page.key)) {
+        throw new Error(`Page "${page.key}" já está registrada por outro plugin.`);
+      }
+      this.pages.set(page.key, page);
+    }
+
     return this;
   }
 
@@ -95,6 +117,14 @@ export class PluginRegistry {
 
   get(name: string): Plugin | undefined {
     return this.plugins.get(name);
+  }
+
+  listConfigDefinitions(): ConfigDefinition[] {
+    return Array.from(this.configs.values());
+  }
+
+  listPages(): PageDefinition[] {
+    return Array.from(this.pages.values());
   }
 }
 

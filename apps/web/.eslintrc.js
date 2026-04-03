@@ -27,7 +27,7 @@ module.exports = {
     //   (e.g. <html>, <body>, <main>) — those are not JSX Elements in the
     //   sense this rule targets (raw divs with arbitrary className).
     "no-restricted-syntax": [
-      "warn",
+      "error",
       {
         selector:
           "JSXOpeningElement[name.name=/^(div|span|p|h1|h2|h3|h4|h5|h6|section|article|aside|header|footer|nav|ul|ol|li)$/][attributes.length>0]",
@@ -35,6 +35,13 @@ module.exports = {
           "Avoid raw HTML elements with props in app/ pages. " +
           "Use components from @fastconsig/ui (Button, Input, Form, AppShell, Container, PageHeader…) instead. " +
           "Raw elements are only allowed inside packages/ui.",
+      },
+      {
+        selector:
+          "JSXAttribute[name.name='className'][value.value=/\\b(p|px|py|m|mx|my|text|bg|border|rounded|shadow|grid|flex|items|justify|gap|min-h|w|h)-/]",
+        message:
+          "Tailwind classes in apps/web are forbidden. " +
+          "Use design-system components from @fastconsig/ui instead of inline utility classes.",
       },
     ],
   },

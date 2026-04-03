@@ -1,5 +1,6 @@
 export { formatDate, slugify, assertNever } from "./utils";
 export { Plugin, PluginRegistry, pluginRegistry } from "./plugin";
+export type { Plugin as PluginContract } from "./plugin";
 export {
   EventBus,
   eventBus,
