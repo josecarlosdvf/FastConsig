@@ -8,9 +8,9 @@ export interface ButtonProps
 }
 
 const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
-  primary: "bg-blue-600 text-white hover:bg-blue-700",
-  secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200",
-  danger: "bg-red-600 text-white hover:bg-red-700",
+  primary: "bg-primary-600 text-white hover:bg-primary-700",
+  secondary: "bg-neutral-100 text-neutral-900 hover:bg-neutral-200",
+  danger: "bg-danger-600 text-white hover:bg-danger-700",
 };
 
 const sizeClasses: Record<NonNullable<ButtonProps["size"]>, string> = {

@@ -1,4 +1,3 @@
-import { prisma } from "../../shared/database/prisma";
 import { createTenantClient } from "../../shared/database/tenant-prisma";
 
 export interface AuthCredentials {
@@ -16,14 +15,14 @@ export interface StoreRefreshTokenData {
 
 export class AuthRepository {
   async findUserByEmail(email: string, tenantId: string) {
-    return prisma.user.findFirst({
-      where: { email, tenant_id: tenantId, is_active: true },
+    return createTenantClient(tenantId).user.findFirst({
+      where: { email, is_active: true },
     });
   }
 
   async findUserById(userId: string, tenantId: string) {
-    return prisma.user.findFirst({
-      where: { id: userId, tenant_id: tenantId, is_active: true },
+    return createTenantClient(tenantId).user.findFirst({
+      where: { id: userId, is_active: true },
     });
   }
 
