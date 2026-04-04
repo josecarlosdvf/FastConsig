@@ -142,6 +142,8 @@ export class ConfigService {
     }
     const definitions = this.listDefinitions().filter((def) => def.scope === scope);
     const defMap = new Map(definitions.map((d) => [d.key, d]));
+    const existing = await this.repo.listValues(scope, tenantId);
+    const oldValueMap = new Map(existing.map((item) => [item.key, item.value]));
 
     for (const entry of entries) {
       const def = defMap.get(entry.key);
@@ -174,8 +176,6 @@ export class ConfigService {
         }
       }
 
-      const existing = await this.repo.listValues(scope, tenantId);
-      const oldValueMap = new Map(existing.map((item) => [item.key, item.value]));
       const oldValue = oldValueMap.get(def.key);
       await this.repo.upsertValue(def.key, scope, entry.value, tenantId);
       eventBus.emit("config.updated", {

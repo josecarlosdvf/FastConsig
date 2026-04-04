@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { Container, CrudPage, Input } from "@fastconsig/ui";
 import { userApi } from "../../services/user";
@@ -28,7 +28,7 @@ export default function UsersPage(): JSX.Element {
   const [feedback, setFeedback] = useState("");
   const [error, setError] = useState("");
 
-  async function load(): Promise<void> {
+  const load = useCallback(async (): Promise<void> => {
     if (!tenantId || !token) return;
     setError("");
     const result = await userApi.list(tenantId, token);
@@ -38,14 +38,13 @@ export default function UsersPage(): JSX.Element {
       email: item.email,
       role: item.role,
     })));
-  }
+  }, [tenantId, token]);
 
   useEffect(() => {
     load().catch((err: unknown) => {
       setError(err instanceof Error ? err.message : "Erro ao carregar usuários");
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenantId, token]);
+  }, [load]);
 
   const columns = useMemo<Array<TableColumn<UserCrudRow>>>(
     () => [

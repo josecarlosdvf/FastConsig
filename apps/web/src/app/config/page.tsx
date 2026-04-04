@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Button,
   Container,
@@ -71,7 +71,7 @@ export default function ConfigPage(): JSX.Element {
     return configApi.updateSystem(currentTenantId, currentToken, payload);
   }
 
-  async function load(): Promise<void> {
+  const load = useCallback(async (): Promise<void> => {
     if (!tenantId || !token) return;
     setLoading(true);
     setError("");
@@ -88,15 +88,14 @@ export default function ConfigPage(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  }
+  }, [scope, tenantId, token]);
 
   useEffect(() => {
     load().catch((err: unknown) => {
       const message = err instanceof Error ? err.message : "Falha ao carregar configurações.";
       setError(message);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scope]);
+  }, [load]);
 
   async function saveSingle(item: ConfigItem, rawValue: string): Promise<void> {
     if (!tenantId || !token) return;
