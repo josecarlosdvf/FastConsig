@@ -42,6 +42,59 @@ model ConfigValue {
   @@map("config_values")
 }
 
+model ConfigValueVersion {
+  id          String   @id @default(uuid())
+  tenant_id   String
+  key         String
+  scope       ConfigScope
+  version     Int
+  value       Json
+  changed_by  String?
+  changed_at  DateTime @default(now())
+  rolled_back Boolean  @default(false)
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@unique([tenant_id, key, scope, version])
+  @@index([tenant_id, key, scope, changed_at])
+  @@map("config_value_versions")
+}
+
+model AuditTrail {
+  id           String   @id @default(uuid())
+  tenant_id    String
+  event_name   String
+  actor_user_id String?
+  trace_id     String?
+  request_id   String?
+  payload      Json
+  created_at   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id, event_name, created_at])
+  @@index([tenant_id, created_at])
+  @@map("audit_trails")
+}
+
+model EventOutbox {
+  id            String   @id @default(uuid())
+  tenant_id     String?
+  event_name    String
+  payload       Json
+  status        EventStatus @default(PENDING)
+  attempts      Int      @default(0)
+  max_attempts  Int      @default(5)
+  last_error    String?
+  next_retry_at DateTime?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@index([status, next_retry_at])
+  @@index([tenant_id, event_name, created_at])
+  @@map("event_outbox")
+}
+
 model User {
   id           String   @id @default(uuid())
   tenant_id    String
@@ -89,4 +142,12 @@ enum UserRole {
 enum ConfigScope {
   system
   tenant
+}
+
+enum EventStatus {
+  PENDING
+  PROCESSING
+  DELIVERED
+  FAILED
+  DEAD_LETTER
 }

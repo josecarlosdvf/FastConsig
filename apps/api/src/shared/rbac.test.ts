@@ -92,6 +92,27 @@ describe("requirePermission", () => {
     expect(mockNext).toHaveBeenCalledTimes(1);
   });
 
+  it("deve chamar next() quando MEMBER tem audit:read", () => {
+    const middleware = requirePermission("audit:read");
+    const req = makeReq("MEMBER");
+    const res = makeRes();
+
+    middleware(req as Request, res as Response, mockNext);
+
+    expect(mockNext).toHaveBeenCalledTimes(1);
+  });
+
+  it("deve retornar 403 quando MEMBER tenta event:write", () => {
+    const middleware = requirePermission("event:write");
+    const req = makeReq("MEMBER");
+    const res = makeRes();
+
+    middleware(req as Request, res as Response, mockNext);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(mockNext).not.toHaveBeenCalled();
+  });
+
   it("deve retornar 403 quando MEMBER tenta acessar tenant:admin", () => {
     const middleware = requirePermission("tenant:admin");
     const req = makeReq("MEMBER");
@@ -107,6 +128,7 @@ describe("requirePermission", () => {
     const allPermissions: Array<Parameters<typeof requirePermission>[0]> = [
       "user:read", "user:write", "user:delete",
       "tenant:read", "tenant:write", "tenant:admin",
+      "audit:read", "event:read", "event:write",
       "session:read", "session:delete",
     ];
 

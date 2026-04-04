@@ -63,6 +63,19 @@ npm run dev
 - **Migrations only**: nunca edite o banco manualmente.
 - Consulte `.github/copilot-instructions.md` para as regras completas.
 
+## Enterprise Control Plane (novo)
+
+- **Versionamento e rollback de config**: histórico em `config_value_versions` e endpoint de rollback.
+- **Audit trail persistente**: trilha em `audit_trails` com filtros e export JSON.
+- **Event bus durável**: outbox em `event_outbox` com retry + dead-letter.
+- **Observabilidade avançada**: headers de tracing (`x-trace-id`, `x-span-id`) e snapshot operacional.
+- **Isolamento de plugins**: limites e timeout de bootstrap no registry.
+
+## Guias rápidos
+
+- IA: `docs/ai-behavior-guidelines.md`
+- Orquestrador humano: `docs/human-orchestrator-quick-guide.md`
+
 ## Scripts
 
 | Comando              | Descrição                    |

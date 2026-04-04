@@ -51,7 +51,7 @@ const databaseFiles = allFiles.filter((f) => f.includes(path.join("shared", "dat
 const allowedPrismaFiles = new Set([...repositoryFiles, ...databaseFiles]);
 
 const routerFiles = allFiles.filter((f) => f.endsWith(".router.ts"));
-const moduleNames = ["auth", "user", "session", "tenant", "config", "control-plane"];
+const moduleNames = ["auth", "user", "session", "tenant", "config", "control-plane", "audit", "events", "ops"];
 
 // ─── 1. No direct Prisma import outside repository / database files ────────────
 
@@ -116,7 +116,10 @@ describe("Governance: protected routers must declare authMiddleware", () => {
   const protectedRouters = routerFiles.filter((f) =>
     f.includes(path.join("modules", "user")) ||
     f.includes(path.join("modules", "session")) ||
-    f.includes(path.join("modules", "config"))
+    f.includes(path.join("modules", "config")) ||
+    f.includes(path.join("modules", "audit")) ||
+    f.includes(path.join("modules", "events")) ||
+    f.includes(path.join("modules", "ops"))
   );
 
   it.each(protectedRouters)("%s must declare authMiddleware", (file) => {

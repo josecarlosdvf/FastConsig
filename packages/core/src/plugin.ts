@@ -40,6 +40,14 @@ export interface Plugin {
   readonly configs?: ConfigDefinition[];
   /** Optional UI pages contributed by this plugin */
   readonly pages?: PageDefinition[];
+  /** Optional bootstrap timeout in milliseconds for plugin registration */
+  readonly bootstrapTimeoutMs?: number;
+  /** Optional limits used by platform runtime guards */
+  readonly limits?: {
+    maxHooks?: number;
+    maxConfigs?: number;
+    maxPages?: number;
+  };
   /** Called once during application startup */
   register(app: Application): void | Promise<void>;
   /**
@@ -61,6 +69,23 @@ export class PluginRegistry {
   private readonly configs = new Map<string, ConfigDefinition>();
   private readonly pages = new Map<string, PageDefinition>();
 
+  private withTimeout<T>(promise: Promise<T>, timeoutMs: number, pluginName: string): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error(`Plugin "${pluginName}" excedeu timeout de bootstrap (${timeoutMs}ms)`));
+      }, timeoutMs);
+      promise
+        .then((result) => {
+          clearTimeout(timeout);
+          resolve(result);
+        })
+        .catch((err: unknown) => {
+          clearTimeout(timeout);
+          reject(err);
+        });
+    });
+  }
+
   register(plugin: Plugin): this {
     if (this.plugins.has(plugin.name)) {
       throw new Error(
@@ -68,6 +93,22 @@ export class PluginRegistry {
       );
     }
     this.plugins.set(plugin.name, plugin);
+
+    const maxHooks = plugin.limits?.maxHooks ?? 30;
+    const maxConfigs = plugin.limits?.maxConfigs ?? 200;
+    const maxPages = plugin.limits?.maxPages ?? 200;
+    const hookCount = Object.keys(plugin.hooks ?? {}).length;
+    const configCount = (plugin.configs ?? []).length;
+    const pageCount = (plugin.pages ?? []).length;
+    if (hookCount > maxHooks) {
+      throw new Error(`Plugin "${plugin.name}" excedeu limite de hooks (${hookCount}/${maxHooks}).`);
+    }
+    if (configCount > maxConfigs) {
+      throw new Error(`Plugin "${plugin.name}" excedeu limite de configs (${configCount}/${maxConfigs}).`);
+    }
+    if (pageCount > maxPages) {
+      throw new Error(`Plugin "${plugin.name}" excedeu limite de pages (${pageCount}/${maxPages}).`);
+    }
 
     for (const config of plugin.configs ?? []) {
       if (this.configs.has(config.key)) {
@@ -88,7 +129,12 @@ export class PluginRegistry {
 
   async bootstrap(app: Application, bus: EventBus = defaultEventBus): Promise<void> {
     for (const plugin of this.plugins.values()) {
-      await plugin.register(app);
+      const timeoutMs = plugin.bootstrapTimeoutMs ?? 8000;
+      await this.withTimeout(
+        Promise.resolve(plugin.register(app)),
+        timeoutMs,
+        plugin.name
+      );
 
       // Subscribe any declared event hooks to the event bus
       if (plugin.hooks) {

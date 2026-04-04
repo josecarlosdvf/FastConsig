@@ -137,4 +137,32 @@ describe("EventBus", () => {
       expect(handler).not.toHaveBeenCalled();
     });
   });
+
+  describe("enterprise events", () => {
+    it("deve aceitar event.retry", async () => {
+      const handler = jest.fn();
+      bus.on("event.retry", handler);
+      bus.emit("event.retry", {
+        eventName: "config.updated",
+        reason: "network",
+        attempts: 2,
+        tenantId: "t1",
+      });
+      await bus.flush();
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it("deve aceitar event.dead_lettered", async () => {
+      const handler = jest.fn();
+      bus.on("event.dead_lettered", handler);
+      bus.emit("event.dead_lettered", {
+        eventName: "config.updated",
+        reason: "max_retries",
+        attempts: 5,
+        tenantId: "t1",
+      });
+      await bus.flush();
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+  });
 });

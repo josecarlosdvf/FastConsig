@@ -13,6 +13,9 @@ import { sessionRouter } from "./modules/session/session.router";
 import { configRouter } from "./modules/config/config.router";
 import { controlPlaneRouter } from "./modules/control-plane/control-plane.router";
 import { controlPlaneCorePlugin } from "./plugins/control-plane-core.plugin";
+import { auditRouter } from "./modules/audit/audit.router";
+import { eventsRouter, eventsService } from "./modules/events/events.router";
+import { opsRouter } from "./modules/ops/ops.router";
 
 export async function createApp(): Promise<Application> {
   const app = express();
@@ -38,10 +41,14 @@ export async function createApp(): Promise<Application> {
   app.use("/api/sessions", sessionRouter);
   app.use("/api/config", configRouter);
   app.use("/api/control-plane", controlPlaneRouter);
+  app.use("/api/audit", auditRouter);
+  app.use("/api/events", eventsRouter);
+  app.use("/api/ops", opsRouter);
 
   // Bootstrap registered plugins
   pluginRegistry.register(controlPlaneCorePlugin);
   await pluginRegistry.bootstrap(app);
+  eventsService.startWorker();
 
   app.use(errorHandler);
 

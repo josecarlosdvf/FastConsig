@@ -3,6 +3,8 @@ import { pluginRegistry, eventBus } from "@fastconsig/core";
 import { ConfigRepository } from "./config.repository";
 import { BASE_CONFIG_DEFINITIONS } from "./config.definitions";
 import { getRedisClient } from "../../shared/cache/redis";
+import { AuditService } from "../audit/audit.service";
+import { EventsService } from "../events/events.service";
 
 type ConfigValue = string | number | boolean | Record<string, unknown>;
 
@@ -29,7 +31,11 @@ interface ConfigResolvedTyped extends ConfigResolved {
 }
 
 export class ConfigService {
-  constructor(private readonly repo: ConfigRepository) {}
+  constructor(
+    private readonly repo: ConfigRepository,
+    private readonly audit?: AuditService,
+    private readonly events?: EventsService
+  ) {}
 
   private cacheKey(scope: ConfigScope, tenantId: string): string {
     return `config:${scope}:${tenantId}`;
@@ -178,6 +184,27 @@ export class ConfigService {
 
       const oldValue = oldValueMap.get(def.key);
       await this.repo.upsertValue(def.key, scope, entry.value, tenantId);
+      await this.repo.appendVersion(def.key, scope, entry.value, tenantId);
+      if (this.audit) {
+        await this.audit.createEvent(tenantId, "config.updated", {
+          key: def.key,
+          scope,
+          oldValue,
+          newValue: entry.value,
+        });
+      }
+      if (this.events) {
+        await this.events.queueEvent(
+          "config.updated",
+          {
+            key: def.key,
+            scope,
+            oldValue,
+            newValue: entry.value,
+          },
+          tenantId
+        );
+      }
       eventBus.emit("config.updated", {
         tenantId,
         key: def.key,
@@ -247,5 +274,63 @@ export class ConfigService {
         source: "default",
       };
     });
+  }
+
+  async listVersions(
+    scope: ConfigScope,
+    key: string,
+    tenantId: string
+  ): Promise<Array<{ version: number; value: ConfigValue; changedAt: string; changedBy?: string; rolledBack: boolean }>> {
+    const rows = await this.repo.listVersions(scope, key, tenantId);
+    return rows.map((row) => ({
+      version: row.version,
+      value: row.value,
+      changedAt: row.changedAt.toISOString(),
+      changedBy: row.changedBy,
+      rolledBack: row.rolledBack,
+    }));
+  }
+
+  async rollback(
+    scope: ConfigScope,
+    key: string,
+    version: number,
+    tenantId: string
+  ): Promise<ConfigResolved[]> {
+    const target = await this.repo.findVersion(scope, key, tenantId, version);
+    if (!target) {
+      const err = new Error(`Versão ${version} não encontrada para ${key}`) as Error & {
+        statusCode: number;
+      };
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const current = await this.repo.listValues(scope, tenantId);
+    const oldValue = current.find((item) => item.key === key)?.value;
+    await this.repo.upsertValue(key, scope, target.value, tenantId);
+    await this.repo.appendVersion(key, scope, target.value, tenantId, true);
+    await this.invalidateCache(tenantId);
+
+    if (this.audit) {
+      await this.audit.createEvent(tenantId, "config.rolled_back", {
+        key,
+        scope,
+        fromValue: oldValue,
+        toValue: target.value,
+        version,
+      });
+    }
+    if (this.events) {
+      await this.events.queueEvent(
+        "config.rolled_back",
+        { key, scope, fromValue: oldValue, toValue: target.value, version },
+        tenantId
+      );
+    }
+
+    return scope === "system"
+      ? this.listSystemConfig(tenantId)
+      : this.listTenantConfig(tenantId);
   }
 }

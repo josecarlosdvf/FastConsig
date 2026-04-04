@@ -45,4 +45,17 @@ export function validateParams<T>(schema: ZodSchema<T>) {
   };
 }
 
+/** Same as `validate` but validates `req.query` instead of `req.body`. */
+export function validateQuery<T>(schema: ZodSchema<T>) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    const result = schema.safeParse(req.query);
+    if (!result.success) {
+      next(result.error);
+      return;
+    }
+    req.query = result.data as unknown as Request["query"];
+    next();
+  };
+}
+
 export type { ZodError };

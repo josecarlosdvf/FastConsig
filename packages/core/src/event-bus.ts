@@ -55,6 +55,18 @@ export interface AppEvents {
     oldValue?: string | number | boolean | Record<string, unknown>;
     newValue: string | number | boolean | Record<string, unknown>;
   };
+  "event.retry": {
+    eventName: string;
+    reason: string;
+    attempts: number;
+    tenantId?: string;
+  };
+  "event.dead_lettered": {
+    eventName: string;
+    reason: string;
+    attempts: number;
+    tenantId?: string;
+  };
 }
 
 export type AppEventName = keyof AppEvents;

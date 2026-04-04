@@ -22,5 +22,14 @@ export function contextMiddleware(
   next: NextFunction
 ): void {
   const requestId = (req as RequestWithId).requestId;
-  runWithContext({ requestId }, () => next());
+  const traceId = req.headers["x-trace-id"];
+  const spanId = req.headers["x-span-id"];
+  runWithContext(
+    {
+      requestId,
+      traceId: typeof traceId === "string" ? traceId : undefined,
+      spanId: typeof spanId === "string" ? spanId : undefined,
+    },
+    () => next()
+  );
 }

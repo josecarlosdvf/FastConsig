@@ -17,6 +17,8 @@ const baseLogger = pino({
     if (!ctx) return {};
     return {
       requestId: ctx.requestId,
+      ...(ctx.traceId !== undefined ? { traceId: ctx.traceId } : {}),
+      ...(ctx.spanId !== undefined ? { spanId: ctx.spanId } : {}),
       ...(ctx.tenantId !== undefined ? { tenantId: ctx.tenantId } : {}),
       ...(ctx.userId !== undefined ? { userId: ctx.userId } : {}),
     };

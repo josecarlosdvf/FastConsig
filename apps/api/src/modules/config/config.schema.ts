@@ -19,3 +19,16 @@ export const updateConfigSchema = z.object({
 });
 
 export type UpdateConfigInput = z.infer<typeof updateConfigSchema>;
+
+export const listConfigVersionsParamsSchema = z.object({
+  scope: z.enum(["system", "tenant"]),
+  key: z.string().min(3),
+});
+
+export const rollbackConfigSchema = z.object({
+  scope: z.enum(["system", "tenant"]),
+  key: z.string().min(3),
+  version: z.number().int().min(1),
+});
+
+export type RollbackConfigInput = z.infer<typeof rollbackConfigSchema>;

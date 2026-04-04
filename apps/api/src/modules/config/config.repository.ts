@@ -16,6 +16,18 @@ export interface ConfigStoreEntry {
   updatedBy?: string;
 }
 
+export interface ConfigVersionEntry {
+  id: string;
+  tenantId: string;
+  key: string;
+  scope: Scope;
+  version: number;
+  value: ConfigValue;
+  changedAt: Date;
+  changedBy?: string;
+  rolledBack: boolean;
+}
+
 interface ConfigValueRow {
   id: string;
   key: string;
@@ -25,6 +37,18 @@ interface ConfigValueRow {
   created_at: Date;
   updated_at: Date;
   updated_by: string | null;
+}
+
+interface ConfigValueVersionRow {
+  id: string;
+  tenant_id: string;
+  key: string;
+  scope: Scope;
+  version: number;
+  value: unknown;
+  changed_at: Date;
+  changed_by: string | null;
+  rolled_back: boolean;
 }
 
 function normalizeValue(value: unknown): ConfigValue {
@@ -125,6 +149,105 @@ export class ConfigRepository {
       createdAt: saved.created_at,
       updatedAt: saved.updated_at,
       updatedBy: saved.updated_by ?? undefined,
+    };
+  }
+
+  async getLatestVersion(scope: Scope, key: string, tenantId: string): Promise<number> {
+    const latest = await this.db().configValueVersion.findFirst({
+      where: {
+        tenant_id: tenantId,
+        scope,
+        key,
+      },
+      orderBy: { version: "desc" },
+      select: { version: true },
+    });
+    return latest?.version ?? 0;
+  }
+
+  async appendVersion(
+    key: string,
+    scope: Scope,
+    value: ConfigValue,
+    tenantId: string,
+    rolledBack = false
+  ): Promise<ConfigVersionEntry> {
+    const ctx = getContext();
+    const currentVersion = await this.getLatestVersion(scope, key, tenantId);
+    const saved = (await this.db().configValueVersion.create({
+      data: {
+        tenant_id: tenantId,
+        key,
+        scope,
+        version: currentVersion + 1,
+        value: toPrismaJson(value),
+        changed_by: ctx?.userId ?? null,
+        rolled_back: rolledBack,
+      },
+    })) as unknown as ConfigValueVersionRow;
+
+    return {
+      id: saved.id,
+      tenantId: saved.tenant_id,
+      key: saved.key,
+      scope: saved.scope,
+      version: saved.version,
+      value: normalizeValue(saved.value),
+      changedAt: saved.changed_at,
+      changedBy: saved.changed_by ?? undefined,
+      rolledBack: saved.rolled_back,
+    };
+  }
+
+  async listVersions(scope: Scope, key: string, tenantId: string): Promise<ConfigVersionEntry[]> {
+    const rows = (await this.db().configValueVersion.findMany({
+      where: {
+        tenant_id: tenantId,
+        scope,
+        key,
+      },
+      orderBy: { version: "desc" },
+      take: 50,
+    })) as unknown as ConfigValueVersionRow[];
+
+    return rows.map((row) => ({
+      id: row.id,
+      tenantId: row.tenant_id,
+      key: row.key,
+      scope: row.scope,
+      version: row.version,
+      value: normalizeValue(row.value),
+      changedAt: row.changed_at,
+      changedBy: row.changed_by ?? undefined,
+      rolledBack: row.rolled_back,
+    }));
+  }
+
+  async findVersion(
+    scope: Scope,
+    key: string,
+    tenantId: string,
+    version: number
+  ): Promise<ConfigVersionEntry | null> {
+    const row = (await this.db().configValueVersion.findFirst({
+      where: {
+        tenant_id: tenantId,
+        scope,
+        key,
+        version,
+      },
+    })) as unknown as ConfigValueVersionRow | null;
+    if (!row) return null;
+    return {
+      id: row.id,
+      tenantId: row.tenant_id,
+      key: row.key,
+      scope: row.scope,
+      version: row.version,
+      value: normalizeValue(row.value),
+      changedAt: row.changed_at,
+      changedBy: row.changed_by ?? undefined,
+      rolledBack: row.rolled_back,
     };
   }
 }

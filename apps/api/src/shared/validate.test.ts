@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import { validate } from "./middleware/validate.middleware";
+import { validate, validateQuery } from "./middleware/validate.middleware";
 
 const mockNext = jest.fn();
 
@@ -86,5 +86,23 @@ describe("validate middleware", () => {
 
     expect(mockNext).toHaveBeenCalledWith();
     expect((req as Request).body).toEqual({ name: "João", email: "joao@example.com" });
+  });
+});
+
+describe("validateQuery middleware", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("deve validar req.query com coercion", () => {
+    const schema = z.object({ limit: z.coerce.number().int().min(1).default(10) });
+    const middleware = validateQuery(schema);
+    const req = { query: { limit: "25" } } as unknown as Request;
+    const res = makeRes();
+
+    middleware(req, res as Response, mockNext);
+
+    expect(mockNext).toHaveBeenCalledWith();
+    expect(req.query).toEqual({ limit: 25 });
   });
 });
