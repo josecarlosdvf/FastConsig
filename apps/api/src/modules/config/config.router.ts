@@ -24,6 +24,9 @@ router.put("/tenant", requirePermission("config:write"), validate(updateConfigSc
 router.get("/system", requirePermission("config:read"), (req, res) =>
   void controller.listSystem(req, res)
 );
+router.get("/effective", requirePermission("config:read"), (req, res) =>
+  void controller.listEffective(req, res)
+);
 router.put("/system", requirePermission("config:write"), validate(updateConfigSchema), (req, res) =>
   void controller.updateSystem(req, res)
 );

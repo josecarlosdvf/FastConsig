@@ -12,6 +12,7 @@ import {
 } from "@fastconsig/ui";
 import { z } from "zod";
 import { configApi, ConfigItem } from "../../services/config";
+import { ControlLayout } from "../control-layout";
 
 type Category = ConfigItem["category"];
 const categories: Category[] = ["security", "auth", "platform", "branding", "ops"];
@@ -117,7 +118,8 @@ export default function ConfigPage(): JSX.Element {
   }
 
   return (
-    <Container size="lg">
+    <ControlLayout>
+      <Container size="lg">
       <PageHeader
         title="Control Plane • Configuração"
         description="Engine de configuração dinâmica por escopo e categoria."
@@ -202,6 +204,7 @@ export default function ConfigPage(): JSX.Element {
         {feedback ? <FormAlert type="success" message={feedback} /> : null}
         {error ? <FormAlert type="error" message={error} /> : null}
       </Form>
-    </Container>
+      </Container>
+    </ControlLayout>
   );
 }

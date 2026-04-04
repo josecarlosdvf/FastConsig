@@ -1,5 +1,5 @@
 import { getContext } from "@fastconsig/core";
-import type { Prisma } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 import { prisma } from "../../shared/database/prisma";
 
 type ConfigValue = string | number | boolean | Record<string, unknown>;
@@ -14,6 +14,17 @@ export interface ConfigStoreEntry {
   createdAt: Date;
   updatedAt: Date;
   updatedBy?: string;
+}
+
+interface ConfigValueRow {
+  id: string;
+  key: string;
+  scope: Scope;
+  tenant_id: string | null;
+  value: unknown;
+  created_at: Date;
+  updated_at: Date;
+  updated_by: string | null;
 }
 
 function normalizeValue(value: unknown): ConfigValue {
@@ -32,14 +43,19 @@ function normalizeValue(value: unknown): ConfigValue {
   return String(value);
 }
 
-function toPrismaJson(value: ConfigValue): Prisma.InputJsonValue {
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-    return value;
-  }
-  return value as Prisma.InputJsonObject;
+function toPrismaJson(value: ConfigValue): unknown {
+  return value;
+}
+
+function isConfigValueRow(value: unknown): value is ConfigValueRow {
+  return Boolean(value) && typeof value === "object";
 }
 
 export class ConfigRepository {
+  private db(): PrismaClient {
+    return prisma as PrismaClient;
+  }
+
   async listValues(scope: Scope, tenantId?: string): Promise<ConfigStoreEntry[]> {
     if (!tenantId) {
       const err = new Error("tenantId é obrigatório para leitura de configurações") as Error & {
@@ -48,12 +64,12 @@ export class ConfigRepository {
       err.statusCode = 400;
       throw err;
     }
-    const rows = await prisma.configValue.findMany({
+    const rows = (await this.db().configValue.findMany({
       where: { scope, tenant_id: tenantId },
       orderBy: { key: "asc" },
-    });
+    })) as unknown as ConfigValueRow[];
 
-    return rows.map((row: Prisma.ConfigValueGetPayload<Record<string, never>>) => ({
+    return rows.filter(isConfigValueRow).map((row: ConfigValueRow) => ({
       id: row.id,
       key: row.key,
       scope: row.scope,
@@ -79,7 +95,7 @@ export class ConfigRepository {
       throw err;
     }
     const ctx = getContext();
-    const saved = await prisma.configValue.upsert({
+    const saved = (await this.db().configValue.upsert({
       where: {
         key_scope_tenant_id: {
           key,
@@ -98,7 +114,7 @@ export class ConfigRepository {
         value: toPrismaJson(value),
         updated_by: ctx?.userId ?? null,
       },
-    });
+    })) as unknown as ConfigValueRow;
 
     return {
       id: saved.id,

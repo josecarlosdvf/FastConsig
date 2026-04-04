@@ -48,6 +48,13 @@ export interface AppEvents {
     tenantId: string;
     userId: string;
   };
+  "config.updated": {
+    tenantId: string;
+    key: string;
+    scope: "system" | "tenant";
+    oldValue?: string | number | boolean | Record<string, unknown>;
+    newValue: string | number | boolean | Record<string, unknown>;
+  };
 }
 
 export type AppEventName = keyof AppEvents;

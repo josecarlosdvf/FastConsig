@@ -8,6 +8,8 @@ export type {
   ConfigValue,
   PageDefinition,
   PluginRegistrationContract,
+  ConfigSchemaMap,
+  TypedConfigAccessor,
 } from "./config";
 
 import type { UserRole } from "./permissions";

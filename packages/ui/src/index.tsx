@@ -26,4 +26,8 @@ export type {
   TextareaField,
   CheckboxField,
 } from "./schema-form";
+export { Table } from "./table";
+export type { TableProps, TableColumn } from "./table";
+export { CrudPage } from "./crud-page";
+export type { CrudPageProps } from "./crud-page";
 export * as tokens from "./tokens";

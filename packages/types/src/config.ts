@@ -39,3 +39,14 @@ export interface PluginRegistrationContract {
   permissions?: Permission[];
 }
 
+export interface ConfigSchemaMap {
+  "auth.session.timeout_seconds": number;
+  "auth.refresh.max_days": number;
+  "platform.maintenance.enabled": boolean;
+  "platform.tenant_default_theme": "light" | "dark";
+}
+
+export interface TypedConfigAccessor {
+  get<K extends keyof ConfigSchemaMap>(key: K): ConfigSchemaMap[K];
+}
+

@@ -1,7 +1,8 @@
 import type { ConfigDefinition, ConfigScope } from "@fastconsig/types";
-import { pluginRegistry } from "@fastconsig/core";
+import { pluginRegistry, eventBus } from "@fastconsig/core";
 import { ConfigRepository } from "./config.repository";
 import { BASE_CONFIG_DEFINITIONS } from "./config.definitions";
+import { getRedisClient } from "../../shared/cache/redis";
 
 type ConfigValue = string | number | boolean | Record<string, unknown>;
 
@@ -23,8 +24,39 @@ interface ConfigResolved {
   updatedBy?: string;
 }
 
+interface ConfigResolvedTyped extends ConfigResolved {
+  source: "tenant" | "system" | "default";
+}
+
 export class ConfigService {
   constructor(private readonly repo: ConfigRepository) {}
+
+  private cacheKey(scope: ConfigScope, tenantId: string): string {
+    return `config:${scope}:${tenantId}`;
+  }
+
+  private async getCached(scope: ConfigScope, tenantId: string): Promise<ConfigResolved[] | null> {
+    const redis = await getRedisClient();
+    if (!redis) return null;
+    const payload = await redis.get(this.cacheKey(scope, tenantId));
+    if (!payload) return null;
+    return JSON.parse(payload) as ConfigResolved[];
+  }
+
+  private async setCached(scope: ConfigScope, tenantId: string, value: ConfigResolved[]): Promise<void> {
+    const redis = await getRedisClient();
+    if (!redis) return;
+    await redis.set(this.cacheKey(scope, tenantId), JSON.stringify(value), { EX: 120 });
+  }
+
+  private async invalidateCache(tenantId: string): Promise<void> {
+    const redis = await getRedisClient();
+    if (!redis) return;
+    await redis.del([
+      this.cacheKey("system", tenantId),
+      this.cacheKey("tenant", tenantId),
+    ]);
+  }
 
   private listDefinitions(): ConfigDefinition[] {
     const pluginDefinitions = pluginRegistry.listConfigDefinitions();
@@ -39,11 +71,14 @@ export class ConfigService {
   }
 
   async listTenantConfig(tenantId: string): Promise<ConfigResolved[]> {
+    const cached = await this.getCached("tenant", tenantId);
+    if (cached) return cached;
+
     const definitions = this.listDefinitions();
     const values = await this.repo.listValues("tenant", tenantId);
     const valueMap = new Map(values.map((v) => [v.key, v]));
 
-    return definitions
+    const resolved = definitions
       .filter((def) => def.scope === "tenant")
       .map((def) => {
         const stored = valueMap.get(def.key);
@@ -60,14 +95,19 @@ export class ConfigService {
           updatedBy: stored?.updatedBy,
         };
       });
+    await this.setCached("tenant", tenantId, resolved);
+    return resolved;
   }
 
   async listSystemConfig(tenantId: string): Promise<ConfigResolved[]> {
+    const cached = await this.getCached("system", tenantId);
+    if (cached) return cached;
+
     const definitions = this.listDefinitions();
     const values = await this.repo.listValues("system", tenantId);
     const valueMap = new Map(values.map((v) => [v.key, v]));
 
-    return definitions
+    const resolved = definitions
       .filter((def) => def.scope === "system")
       .map((def) => {
         const stored = valueMap.get(def.key);
@@ -84,6 +124,8 @@ export class ConfigService {
           updatedBy: stored?.updatedBy,
         };
       });
+    await this.setCached("system", tenantId, resolved);
+    return resolved;
   }
 
   async updateScopeConfig(
@@ -125,11 +167,78 @@ export class ConfigService {
         }
       }
 
+      const existing = await this.repo.listValues(scope, tenantId);
+      const oldValueMap = new Map(existing.map((item) => [item.key, item.value]));
+      const oldValue = oldValueMap.get(def.key);
       await this.repo.upsertValue(def.key, scope, entry.value, tenantId);
+      eventBus.emit("config.updated", {
+        tenantId: tenantId as string,
+        key: def.key,
+        scope,
+        oldValue,
+        newValue: entry.value,
+      });
     }
+    await this.invalidateCache(tenantId as string);
 
     return scope === "system"
       ? this.listSystemConfig(tenantId as string)
       : this.listTenantConfig(tenantId as string);
+  }
+
+  async listEffectiveConfig(tenantId: string): Promise<ConfigResolvedTyped[]> {
+    const definitions = this.listDefinitions();
+    const tenantValues = await this.repo.listValues("tenant", tenantId);
+    const systemValues = await this.repo.listValues("system", tenantId);
+    const tenantMap = new Map(tenantValues.map((v) => [v.key, v]));
+    const systemMap = new Map(systemValues.map((v) => [v.key, v]));
+
+    return definitions.map((def) => {
+      const tenantStored = tenantMap.get(def.key);
+      const systemStored = systemMap.get(def.key);
+      if (tenantStored) {
+        return {
+          key: def.key,
+          scope: def.scope,
+          category: def.category,
+          label: def.label,
+          description: def.description,
+          type: def.type,
+          options: def.options,
+          value: tenantStored.value,
+          updatedAt: tenantStored.updatedAt.toISOString(),
+          updatedBy: tenantStored.updatedBy,
+          source: "tenant",
+        };
+      }
+
+      if (systemStored) {
+        return {
+          key: def.key,
+          scope: def.scope,
+          category: def.category,
+          label: def.label,
+          description: def.description,
+          type: def.type,
+          options: def.options,
+          value: systemStored.value,
+          updatedAt: systemStored.updatedAt.toISOString(),
+          updatedBy: systemStored.updatedBy,
+          source: "system",
+        };
+      }
+
+      return {
+        key: def.key,
+        scope: def.scope,
+        category: def.category,
+        label: def.label,
+        description: def.description,
+        type: def.type,
+        options: def.options,
+        value: def.defaultValue,
+        source: "default",
+      };
+    });
   }
 }

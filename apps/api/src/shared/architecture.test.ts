@@ -51,7 +51,7 @@ const databaseFiles = allFiles.filter((f) => f.includes(path.join("shared", "dat
 const allowedPrismaFiles = new Set([...repositoryFiles, ...databaseFiles]);
 
 const routerFiles = allFiles.filter((f) => f.endsWith(".router.ts"));
-const moduleNames = ["auth", "user", "session", "tenant", "config"];
+const moduleNames = ["auth", "user", "session", "tenant", "config", "control-plane"];
 
 // ─── 1. No direct Prisma import outside repository / database files ────────────
 

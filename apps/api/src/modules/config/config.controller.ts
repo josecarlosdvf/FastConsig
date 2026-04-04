@@ -16,6 +16,11 @@ export class ConfigController {
     res.json(await this.service.listSystemConfig(tenantId));
   }
 
+  async listEffective(req: Request, res: Response): Promise<void> {
+    const { tenantId } = req as AuthRequest;
+    res.json(await this.service.listEffectiveConfig(tenantId));
+  }
+
   async updateTenant(req: Request, res: Response): Promise<void> {
     const { tenantId } = req as AuthRequest;
     const body = req.body as UpdateConfigInput;
