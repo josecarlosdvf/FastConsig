@@ -17,8 +17,13 @@ export function authMiddleware(
 ): void {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Token não informado" });
+  if (!authHeader) {
+    res.status(401).json({ error: "Authorization header não informado" });
+    return;
+  }
+
+  if (!authHeader.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Formato de Authorization inválido. Use Bearer <token>" });
     return;
   }
 

@@ -34,5 +34,5 @@ export const rollbackConfigSchema = z.object({
 export type RollbackConfigInput = z.infer<typeof rollbackConfigSchema>;
 
 export const rollbackConfigRequestSchema = z.object({
-  entries: z.tuple([rollbackConfigSchema]),
+  entry: rollbackConfigSchema,
 });

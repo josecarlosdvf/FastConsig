@@ -160,11 +160,7 @@ export class ConfigService {
       }
 
       if (def.type === "enum") {
-        if (
-          typeof entry.value !== "string" &&
-          typeof entry.value !== "number" &&
-          typeof entry.value !== "boolean"
-        ) {
+        if (typeof entry.value === "object") {
           const err = new Error(`Valor inválido para ${entry.key}.`) as Error & {
             statusCode: number;
           };
