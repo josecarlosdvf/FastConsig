@@ -38,7 +38,16 @@ export async function createApp(): Promise<Application> {
     res.json(metricsStore.snapshot());
   });
 
-  app.get("/metrics", (_req, res) => {
+  app.get("/metrics", (req, res) => {
+    const token = process.env.METRICS_TOKEN;
+    if (token) {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || authHeader !== `Bearer ${token}`) {
+        res.status(401).json({ error: "Unauthorized metrics access" });
+        return;
+      }
+    }
+
     void opsService
       .durableMetricsSnapshot()
       .then((durable) => {

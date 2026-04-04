@@ -88,8 +88,12 @@ Serviços adicionados no `docker-compose.yml`:
 
 Endpoints da API:
 - JSON: `GET /api/metrics`
-- Prometheus: `GET /metrics`
+- Prometheus: `GET /metrics` (Bearer `METRICS_TOKEN` quando definido)
 - Snapshot operacional autenticado: `GET /api/ops/observability`
+
+Variáveis obrigatórias para produção:
+- `METRICS_TOKEN`
+- `GRAFANA_ADMIN_PASSWORD`
 
 Subir stack:
 

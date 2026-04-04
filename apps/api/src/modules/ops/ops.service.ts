@@ -9,6 +9,8 @@ interface DurableEventsSnapshot {
   deliveredLastHour: number;
 }
 
+const FAILED_EVENTS_WARNING_THRESHOLD = 10;
+
 interface ObservabilitySnapshot {
   metrics: ReturnType<typeof metricsStore.snapshot>;
   durableEvents: DurableEventsSnapshot;
@@ -49,10 +51,10 @@ export class OpsService {
         message: `Há ${durable.deadLetter} eventos em dead-letter.`,
       });
     }
-    if (durable.failed > 10) {
+    if (durable.failed > FAILED_EVENTS_WARNING_THRESHOLD) {
       alerts.push({
         level: "warning",
-        message: `Há ${durable.failed} eventos falhos aguardando retry.`,
+        message: `Há ${durable.failed} eventos falhos aguardando retry (limiar ${FAILED_EVENTS_WARNING_THRESHOLD}).`,
       });
     }
     if (alerts.length === 0) {
