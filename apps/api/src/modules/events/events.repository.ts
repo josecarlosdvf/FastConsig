@@ -1,4 +1,4 @@
-import { PrismaClient, EventStatus } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "../../shared/database/prisma";
 
 interface QueueEventInput {
@@ -10,7 +10,7 @@ interface QueueEventInput {
 
 export class EventsRepository {
   private db(): PrismaClient {
-    return prisma as PrismaClient;
+    return prisma;
   }
 
   async queue(input: QueueEventInput): Promise<void> {
@@ -18,7 +18,7 @@ export class EventsRepository {
       data: {
         tenant_id: input.tenantId ?? null,
         event_name: input.eventName,
-        payload: input.payload,
+        payload: input.payload as Prisma.InputJsonObject,
         max_attempts: input.maxAttempts ?? 5,
       },
     });
@@ -29,9 +29,9 @@ export class EventsRepository {
     const rows = await this.db().eventOutbox.findMany({
       where: {
         OR: [
-          { status: EventStatus.PENDING, next_retry_at: null },
-          { status: EventStatus.PENDING, next_retry_at: { lte: now } },
-          { status: EventStatus.FAILED, next_retry_at: { lte: now } },
+          { status: "PENDING", next_retry_at: null },
+          { status: "PENDING", next_retry_at: { lte: now } },
+          { status: "FAILED", next_retry_at: { lte: now } },
         ],
       },
       orderBy: { created_at: "asc" },
@@ -45,7 +45,7 @@ export class EventsRepository {
           id: row.id,
           status: row.status,
         },
-        data: { status: EventStatus.PROCESSING },
+        data: { status: "PROCESSING" },
       });
       if (updated.count > 0) claimed.push(row);
     }
@@ -55,7 +55,7 @@ export class EventsRepository {
   async markDelivered(id: string): Promise<void> {
     await this.db().eventOutbox.update({
       where: { id },
-      data: { status: EventStatus.DELIVERED, last_error: null, next_retry_at: null },
+      data: { status: "DELIVERED", last_error: null, next_retry_at: null },
     });
   }
 
@@ -66,7 +66,7 @@ export class EventsRepository {
       data: {
         attempts,
         last_error: reason,
-        status: attempts >= maxAttempts ? EventStatus.DEAD_LETTER : EventStatus.FAILED,
+        status: attempts >= maxAttempts ? "DEAD_LETTER" : "FAILED",
         next_retry_at: attempts >= maxAttempts ? null : nextRetryAt,
       },
     });
@@ -74,7 +74,7 @@ export class EventsRepository {
 
   async listDeadLetter(tenantId: string) {
     return this.db().eventOutbox.findMany({
-      where: { tenant_id: tenantId, status: EventStatus.DEAD_LETTER },
+      where: { tenant_id: tenantId, status: "DEAD_LETTER" },
       orderBy: { created_at: "desc" },
       take: 200,
     });
@@ -84,7 +84,7 @@ export class EventsRepository {
     await this.db().eventOutbox.update({
       where: { id },
       data: {
-        status: EventStatus.PENDING,
+        status: "PENDING",
         attempts: 0,
         last_error: null,
         next_retry_at: null,

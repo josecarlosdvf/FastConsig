@@ -1,5 +1,5 @@
 import { getContext } from "@fastconsig/core";
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "../../shared/database/prisma";
 
 type ConfigValue = string | number | boolean | Record<string, unknown>;
@@ -67,8 +67,15 @@ function normalizeValue(value: unknown): ConfigValue {
   return String(value);
 }
 
-function toPrismaJson(value: ConfigValue): unknown {
-  return value;
+function toPrismaJson(value: ConfigValue): Prisma.InputJsonValue {
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+  return value as Prisma.InputJsonObject;
 }
 
 function isConfigValueRow(value: unknown): value is ConfigValueRow {
@@ -77,7 +84,7 @@ function isConfigValueRow(value: unknown): value is ConfigValueRow {
 
 export class ConfigRepository {
   private db(): PrismaClient {
-    return prisma as PrismaClient;
+    return prisma;
   }
 
   async listValues(scope: Scope, tenantId?: string): Promise<ConfigStoreEntry[]> {

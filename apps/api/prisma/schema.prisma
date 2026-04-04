@@ -21,6 +21,8 @@ model Tenant {
   users         User[]
   refreshTokens RefreshToken[]
   configValues  ConfigValue[]
+  configValueVersions ConfigValueVersion[]
+  auditTrails AuditTrail[]
 
   @@map("tenants")
 }

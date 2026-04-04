@@ -12,7 +12,7 @@ import { requirePermission } from "../../shared/middleware/rbac.middleware";
 import { validate, validateParams } from "../../shared/middleware/validate.middleware";
 import {
   updateConfigSchema,
-  rollbackConfigSchema,
+  rollbackConfigRequestSchema,
   listConfigVersionsParamsSchema,
 } from "./config.schema";
 
@@ -49,11 +49,8 @@ router.get(
   validateParams(listConfigVersionsParamsSchema),
   (req, res) => void controller.listVersions(req, res)
 );
-router.post(
-  "/rollback",
-  requirePermission("config:write"),
-  validate(rollbackConfigSchema),
-  (req, res) => void controller.rollback(req, res)
+router.post("/rollback", requirePermission("config:write"), validate(rollbackConfigRequestSchema), (req, res) =>
+  void controller.rollback(req, res)
 );
 
 export { router as configRouter };

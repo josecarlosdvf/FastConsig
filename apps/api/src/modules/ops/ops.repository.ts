@@ -1,9 +1,9 @@
-import { PrismaClient, EventStatus } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { prisma } from "../../shared/database/prisma";
 
 export class OpsRepository {
   private db(): PrismaClient {
-    return prisma as PrismaClient;
+    return prisma;
   }
 
   async durablePipelineHealth(): Promise<{
@@ -14,13 +14,13 @@ export class OpsRepository {
     deliveredLastHour: number;
   }> {
     const [pending, processing, failed, deadLetter, deliveredLastHour] = await Promise.all([
-      this.db().eventOutbox.count({ where: { status: EventStatus.PENDING } }),
-      this.db().eventOutbox.count({ where: { status: EventStatus.PROCESSING } }),
-      this.db().eventOutbox.count({ where: { status: EventStatus.FAILED } }),
-      this.db().eventOutbox.count({ where: { status: EventStatus.DEAD_LETTER } }),
+      this.db().eventOutbox.count({ where: { status: "PENDING" } }),
+      this.db().eventOutbox.count({ where: { status: "PROCESSING" } }),
+      this.db().eventOutbox.count({ where: { status: "FAILED" } }),
+      this.db().eventOutbox.count({ where: { status: "DEAD_LETTER" } }),
       this.db().eventOutbox.count({
         where: {
-          status: EventStatus.DELIVERED,
+          status: "DELIVERED",
           updated_at: { gte: new Date(Date.now() - 60 * 60 * 1000) },
         },
       }),

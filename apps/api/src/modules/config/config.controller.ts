@@ -46,11 +46,12 @@ export class ConfigController {
 
   async rollback(req: Request, res: Response): Promise<void> {
     const { tenantId } = req as AuthRequest;
-    const body = req.body as RollbackConfigInput;
+    const body = req.body as { entries: RollbackConfigInput[] };
+    const entry = body.entries[0];
     const result = await this.service.rollback(
-      body.scope,
-      body.key,
-      body.version,
+      entry.scope,
+      entry.key,
+      entry.version,
       tenantId
     );
     res.json(result);

@@ -128,6 +128,7 @@ describe("requirePermission", () => {
     const allPermissions: Array<Parameters<typeof requirePermission>[0]> = [
       "user:read", "user:write", "user:delete",
       "tenant:read", "tenant:write", "tenant:admin",
+      "config:read", "config:write",
       "audit:read", "event:read", "event:write",
       "session:read", "session:delete",
     ];

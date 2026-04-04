@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 import { getContext } from "@fastconsig/core";
 import { prisma } from "../../shared/database/prisma";
 
@@ -19,7 +19,7 @@ interface AuditListFilter {
 
 export class AuditRepository {
   private db(): PrismaClient {
-    return prisma as PrismaClient;
+    return prisma;
   }
 
   async create(input: AuditCreateInput): Promise<void> {
@@ -31,7 +31,7 @@ export class AuditRepository {
         actor_user_id: input.actorUserId ?? ctx?.userId ?? null,
         request_id: ctx?.requestId ?? null,
         trace_id: ctx?.traceId ?? null,
-        payload: input.payload,
+        payload: input.payload as Prisma.InputJsonObject,
       },
     });
   }
