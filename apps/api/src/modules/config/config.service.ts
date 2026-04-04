@@ -133,6 +133,13 @@ export class ConfigService {
     entries: UpdateEntry[],
     tenantId?: string
   ): Promise<ConfigResolved[]> {
+    if (!tenantId) {
+      const err = new Error("tenantId é obrigatório para atualizar configurações") as Error & {
+        statusCode: number;
+      };
+      err.statusCode = 400;
+      throw err;
+    }
     const definitions = this.listDefinitions().filter((def) => def.scope === scope);
     const defMap = new Map(definitions.map((d) => [d.key, d]));
 
@@ -172,18 +179,18 @@ export class ConfigService {
       const oldValue = oldValueMap.get(def.key);
       await this.repo.upsertValue(def.key, scope, entry.value, tenantId);
       eventBus.emit("config.updated", {
-        tenantId: tenantId as string,
+        tenantId,
         key: def.key,
         scope,
         oldValue,
         newValue: entry.value,
       });
     }
-    await this.invalidateCache(tenantId as string);
+    await this.invalidateCache(tenantId);
 
     return scope === "system"
-      ? this.listSystemConfig(tenantId as string)
-      : this.listTenantConfig(tenantId as string);
+      ? this.listSystemConfig(tenantId)
+      : this.listTenantConfig(tenantId);
   }
 
   async listEffectiveConfig(tenantId: string): Promise<ConfigResolvedTyped[]> {

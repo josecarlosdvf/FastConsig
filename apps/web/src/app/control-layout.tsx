@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AppShell, Container, Navbar, Button, Input, Form } from "@fastconsig/ui";
+import { useRouter } from "next/navigation";
 import { controlPlaneApi, ControlPlanePage } from "../services/control-plane";
 
 interface ControlLayoutProps {
@@ -9,6 +10,7 @@ interface ControlLayoutProps {
 }
 
 export function ControlLayout({ children }: ControlLayoutProps): JSX.Element {
+  const router = useRouter();
   const [tenantId, setTenantId] = useState("");
   const [token, setToken] = useState("");
   const [pages, setPages] = useState<ControlPlanePage[]>([]);
@@ -27,12 +29,10 @@ export function ControlLayout({ children }: ControlLayoutProps): JSX.Element {
             <InputBlock label="Token" value={token} onChange={setToken} type="password" />
           </Form>
           {pages.map((page) => (
-            <Button key={page.key} variant="secondary" onClick={() => window.location.assign(page.route)}>
+            <Button key={page.key} variant="secondary" onClick={() => router.push(page.route)}>
               {page.title}
             </Button>
           ))}
-          <Button variant="secondary" onClick={() => window.location.assign("/config")}>Config</Button>
-          <Button variant="secondary" onClick={() => window.location.assign("/users")}>Usuários</Button>
         </Container>
       )}
     >

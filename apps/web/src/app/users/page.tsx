@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Container, CrudPage, Input } from "@fastconsig/ui";
 import { userApi } from "../../services/user";
 import { ControlLayout } from "../control-layout";
+import type { TableColumn } from "@fastconsig/ui";
 
 const userSchema = z.object({
   name: z.string().min(2),
@@ -46,12 +47,12 @@ export default function UsersPage(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId, token]);
 
-  const columns = useMemo(
+  const columns = useMemo<Array<TableColumn<UserCrudRow>>>(
     () => [
       { key: "name", label: "Nome" },
       { key: "email", label: "Email" },
       { key: "role", label: "Perfil" },
-    ] as const,
+    ],
     []
   );
 
@@ -84,7 +85,7 @@ export default function UsersPage(): JSX.Element {
             },
           }}
           rows={rows}
-          columns={columns as unknown as Array<{ key: keyof UserCrudRow & string; label: string }>}
+          columns={columns}
           rowKey={(row) => row.id}
           onCreate={async (data) => {
             if (!tenantId || !token) return;
