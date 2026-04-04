@@ -1,4 +1,3 @@
--- CreateTable
 -- CreateEnum
 CREATE TYPE "EventStatus" AS ENUM ('PENDING', 'PROCESSING', 'DELIVERED', 'FAILED', 'DEAD_LETTER');
 
