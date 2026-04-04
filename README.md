@@ -94,6 +94,7 @@ Endpoints da API:
 Variáveis obrigatórias para produção:
 - `METRICS_TOKEN`
 - `GRAFANA_ADMIN_PASSWORD`
+- `OPS_FAILED_EVENTS_WARNING_THRESHOLD` (opcional; default 10)
 
 Subir stack:
 

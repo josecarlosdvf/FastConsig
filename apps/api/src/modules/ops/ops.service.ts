@@ -9,7 +9,16 @@ interface DurableEventsSnapshot {
   deliveredLastHour: number;
 }
 
-const FAILED_EVENTS_WARNING_THRESHOLD = 10;
+const DEFAULT_FAILED_EVENTS_WARNING_THRESHOLD = 10;
+function failedEventsWarningThreshold(): number {
+  const raw = process.env.OPS_FAILED_EVENTS_WARNING_THRESHOLD;
+  if (!raw) return DEFAULT_FAILED_EVENTS_WARNING_THRESHOLD;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return DEFAULT_FAILED_EVENTS_WARNING_THRESHOLD;
+  }
+  return Math.floor(parsed);
+}
 
 interface ObservabilitySnapshot {
   metrics: ReturnType<typeof metricsStore.snapshot>;
@@ -51,10 +60,11 @@ export class OpsService {
         message: `Há ${durable.deadLetter} eventos em dead-letter.`,
       });
     }
-    if (durable.failed > FAILED_EVENTS_WARNING_THRESHOLD) {
+    const threshold = failedEventsWarningThreshold();
+    if (durable.failed > threshold) {
       alerts.push({
         level: "warning",
-        message: `Há ${durable.failed} eventos falhos aguardando retry (limiar ${FAILED_EVENTS_WARNING_THRESHOLD}).`,
+        message: `Há ${durable.failed} eventos falhos aguardando retry (limiar ${threshold}).`,
       });
     }
     if (alerts.length === 0) {
