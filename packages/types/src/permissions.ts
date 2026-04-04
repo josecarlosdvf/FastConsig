@@ -24,7 +24,13 @@ export type Permission =
   | "event:read"
   | "event:write"
   | "session:read"
-  | "session:delete";
+  | "session:delete"
+  | "learning:read"
+  | "learning:write"
+  | "license:read"
+  | "license:write"
+  | "billing:read"
+  | "billing:write";
 
 export type UserRole = "ADMIN" | "MEMBER";
 
@@ -50,6 +56,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "event:write",
     "session:read",
     "session:delete",
+    "learning:read",
+    "learning:write",
+    "license:read",
+    "license:write",
+    "billing:read",
+    "billing:write",
   ],
   MEMBER: [
     "user:read",
@@ -58,5 +70,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "audit:read",
     "session:read",
     "session:delete",
+    "learning:read",
+    "license:read",
+    "billing:read",
   ],
 } as const;

@@ -71,6 +71,12 @@ npm run dev
 - **Observabilidade avançada**: headers de tracing (`x-trace-id`, `x-span-id`) e snapshot operacional.
 - **Isolamento de plugins**: limites e timeout de bootstrap no registry.
 
+## Plugins de produto (novo)
+
+- **Learning System**: tutoriais, focos de tela, wizards e jornadas de atualização.
+- **Monetization Core**: landing/produtos, planos, ciclos mensal/anual, contratos e licenças.
+- **Monetization Payments**: operação de cobrança PIX e cartão (crédito/débito), transações e conciliação.
+
 ## Guias rápidos
 
 - IA: `docs/ai-behavior-guidelines.md`

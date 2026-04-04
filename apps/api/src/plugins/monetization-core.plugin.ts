@@ -1,0 +1,102 @@
+import { Plugin } from "@fastconsig/core";
+
+export const monetizationCorePlugin: Plugin = {
+  name: "monetization-core",
+  version: "0.1.0",
+  description: "Licenciamento, planos comerciais, ciclos de cobrança e gestão de assinaturas",
+  permissions: [
+    "license:read",
+    "license:write",
+    "billing:read",
+    "billing:write",
+    "config:read",
+    "config:write",
+  ],
+  configs: [
+    {
+      key: "monetization.enabled",
+      label: "Habilitar monetização",
+      description: "Ativa recursos de planos, contratos e licenciamento por tenant.",
+      type: "boolean",
+      scope: "system",
+      category: "platform",
+      defaultValue: true,
+    },
+    {
+      key: "monetization.default_billing_cycle",
+      label: "Ciclo de cobrança padrão",
+      description: "Define o ciclo padrão aplicado em novas assinaturas.",
+      type: "enum",
+      scope: "system",
+      category: "platform",
+      defaultValue: "monthly",
+      options: ["monthly", "annual"],
+    },
+    {
+      key: "monetization.trial_days",
+      label: "Dias de trial",
+      description: "Quantidade de dias de trial para novos tenants.",
+      type: "number",
+      scope: "system",
+      category: "platform",
+      defaultValue: 14,
+    },
+    {
+      key: "monetization.license.grace_period_days",
+      label: "Dias de tolerância da licença",
+      description: "Dias de tolerância após vencimento antes de suspensão.",
+      type: "number",
+      scope: "system",
+      category: "security",
+      defaultValue: 5,
+    },
+    {
+      key: "monetization.notifications.enabled",
+      label: "Notificações comerciais ativas",
+      description: "Habilita notificações para renovação, vencimento e inadimplência.",
+      type: "boolean",
+      scope: "system",
+      category: "ops",
+      defaultValue: true,
+    },
+  ],
+  pages: [
+    {
+      key: "monetization.landing",
+      route: "/monetization/landing",
+      title: "Landing Page",
+      description: "Configuração da landing page comercial e mensagens de aquisição.",
+      requiredPermissions: ["billing:read"],
+    },
+    {
+      key: "monetization.products",
+      route: "/monetization/products",
+      title: "Produtos e Pacotes",
+      description: "Gestão de produtos, pacotes, preços e recursos por plano.",
+      requiredPermissions: ["billing:read"],
+    },
+    {
+      key: "monetization.licenses",
+      route: "/monetization/licenses",
+      title: "Licenças",
+      description: "Controle de licenças por tenant, usuário e período de validade.",
+      requiredPermissions: ["license:read"],
+    },
+    {
+      key: "monetization.subscriptions",
+      route: "/monetization/subscriptions",
+      title: "Assinaturas",
+      description: "Acompanhamento de assinaturas ativas, vencidas e renovadas.",
+      requiredPermissions: ["billing:read"],
+    },
+  ],
+  limits: {
+    maxHooks: 15,
+    maxConfigs: 100,
+    maxPages: 30,
+  },
+  bootstrapTimeoutMs: 5000,
+  register() {
+    // Declarative plugin for catalog and feature toggles.
+  },
+};

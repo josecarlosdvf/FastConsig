@@ -13,6 +13,9 @@ import { sessionRouter } from "./modules/session/session.router";
 import { configRouter } from "./modules/config/config.router";
 import { controlPlaneRouter } from "./modules/control-plane/control-plane.router";
 import { controlPlaneCorePlugin } from "./plugins/control-plane-core.plugin";
+import { learningSystemPlugin } from "./plugins/learning-system.plugin";
+import { monetizationCorePlugin } from "./plugins/monetization-core.plugin";
+import { monetizationPaymentsPlugin } from "./plugins/monetization-payments.plugin";
 import { auditRouter } from "./modules/audit/audit.router";
 import { eventsRouter, eventsService } from "./modules/events/events.router";
 import { opsRouter } from "./modules/ops/ops.router";
@@ -81,6 +84,9 @@ export async function createApp(): Promise<Application> {
 
   // Bootstrap registered plugins
   pluginRegistry.register(controlPlaneCorePlugin);
+  pluginRegistry.register(learningSystemPlugin);
+  pluginRegistry.register(monetizationCorePlugin);
+  pluginRegistry.register(monetizationPaymentsPlugin);
   await pluginRegistry.bootstrap(app);
   eventsService.startWorker();
 
