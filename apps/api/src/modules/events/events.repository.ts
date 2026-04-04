@@ -1,4 +1,5 @@
-import type { Prisma, PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
+import type { InputJsonObject } from "@prisma/client/runtime/library";
 import { prisma } from "../../shared/database/prisma";
 
 interface QueueEventInput {
@@ -18,7 +19,7 @@ export class EventsRepository {
       data: {
         tenant_id: input.tenantId ?? null,
         event_name: input.eventName,
-        payload: input.payload as Prisma.InputJsonObject,
+        payload: input.payload as InputJsonObject,
         max_attempts: input.maxAttempts ?? 5,
       },
     });

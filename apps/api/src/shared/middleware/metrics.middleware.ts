@@ -18,6 +18,14 @@ interface MetricsSnapshot {
   routes: Record<string, { count: number; errors: number; avgMs: number; maxMs: number }>;
 }
 
+interface DurableMetricsSnapshot {
+  pending: number;
+  processing: number;
+  failed: number;
+  deadLetter: number;
+  deliveredLastHour: number;
+}
+
 class MetricsStore {
   readonly startedAt = Date.now();
   totalRequests = 0;
@@ -73,6 +81,68 @@ class MetricsStore {
       statusCodes: { ...this.statusCodes },
       routes,
     };
+  }
+
+  prometheusSnapshot(durable?: DurableMetricsSnapshot): string {
+    const snapshot = this.snapshot();
+    const lines: string[] = [];
+    lines.push("# HELP fastconsig_http_requests_total Total HTTP requests processed.");
+    lines.push("# TYPE fastconsig_http_requests_total counter");
+    lines.push(`fastconsig_http_requests_total ${snapshot.totalRequests}`);
+
+    lines.push("# HELP fastconsig_http_active_requests Current active HTTP requests.");
+    lines.push("# TYPE fastconsig_http_active_requests gauge");
+    lines.push(`fastconsig_http_active_requests ${snapshot.activeRequests}`);
+
+    lines.push("# HELP fastconsig_process_uptime_seconds Process uptime in seconds.");
+    lines.push("# TYPE fastconsig_process_uptime_seconds gauge");
+    lines.push(`fastconsig_process_uptime_seconds ${snapshot.uptime}`);
+
+    lines.push("# HELP fastconsig_http_status_bucket_total Requests aggregated by status bucket.");
+    lines.push("# TYPE fastconsig_http_status_bucket_total counter");
+    for (const [bucket, count] of Object.entries(snapshot.statusCodes)) {
+      lines.push(`fastconsig_http_status_bucket_total{bucket="${bucket}"} ${count}`);
+    }
+
+    lines.push("# HELP fastconsig_http_route_requests_total Requests per route pattern.");
+    lines.push("# TYPE fastconsig_http_route_requests_total counter");
+    lines.push("# HELP fastconsig_http_route_errors_total Errors per route pattern.");
+    lines.push("# TYPE fastconsig_http_route_errors_total counter");
+    lines.push("# HELP fastconsig_http_route_duration_avg_ms Average route response time in ms.");
+    lines.push("# TYPE fastconsig_http_route_duration_avg_ms gauge");
+    lines.push("# HELP fastconsig_http_route_duration_max_ms Maximum route response time in ms.");
+    lines.push("# TYPE fastconsig_http_route_duration_max_ms gauge");
+    for (const [route, stats] of Object.entries(snapshot.routes)) {
+      const escapedRoute = route.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+      lines.push(`fastconsig_http_route_requests_total{route="${escapedRoute}"} ${stats.count}`);
+      lines.push(`fastconsig_http_route_errors_total{route="${escapedRoute}"} ${stats.errors}`);
+      lines.push(`fastconsig_http_route_duration_avg_ms{route="${escapedRoute}"} ${stats.avgMs}`);
+      lines.push(`fastconsig_http_route_duration_max_ms{route="${escapedRoute}"} ${stats.maxMs}`);
+    }
+
+    if (durable) {
+      lines.push("# HELP fastconsig_event_outbox_pending Pending events in outbox.");
+      lines.push("# TYPE fastconsig_event_outbox_pending gauge");
+      lines.push(`fastconsig_event_outbox_pending ${durable.pending}`);
+
+      lines.push("# HELP fastconsig_event_outbox_processing Processing events in outbox.");
+      lines.push("# TYPE fastconsig_event_outbox_processing gauge");
+      lines.push(`fastconsig_event_outbox_processing ${durable.processing}`);
+
+      lines.push("# HELP fastconsig_event_outbox_failed Failed events waiting retry.");
+      lines.push("# TYPE fastconsig_event_outbox_failed gauge");
+      lines.push(`fastconsig_event_outbox_failed ${durable.failed}`);
+
+      lines.push("# HELP fastconsig_event_outbox_dead_letter Events moved to dead-letter queue.");
+      lines.push("# TYPE fastconsig_event_outbox_dead_letter gauge");
+      lines.push(`fastconsig_event_outbox_dead_letter ${durable.deadLetter}`);
+
+      lines.push("# HELP fastconsig_event_outbox_delivered_last_hour Delivered events in last hour.");
+      lines.push("# TYPE fastconsig_event_outbox_delivered_last_hour gauge");
+      lines.push(`fastconsig_event_outbox_delivered_last_hour ${durable.deliveredLastHour}`);
+    }
+
+    return `${lines.join("\n")}\n`;
   }
 }
 

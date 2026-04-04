@@ -1,5 +1,6 @@
 import { getContext } from "@fastconsig/core";
-import type { Prisma, PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
+import type { InputJsonObject, InputJsonValue } from "@prisma/client/runtime/library";
 import { prisma } from "../../shared/database/prisma";
 
 type ConfigValue = string | number | boolean | Record<string, unknown>;
@@ -67,7 +68,7 @@ function normalizeValue(value: unknown): ConfigValue {
   return String(value);
 }
 
-function toPrismaJson(value: ConfigValue): Prisma.InputJsonValue {
+function toPrismaJson(value: ConfigValue): InputJsonValue {
   if (
     typeof value === "string" ||
     typeof value === "number" ||
@@ -75,7 +76,7 @@ function toPrismaJson(value: ConfigValue): Prisma.InputJsonValue {
   ) {
     return value;
   }
-  return value as Prisma.InputJsonObject;
+  return value as InputJsonObject;
 }
 
 function isConfigValueRow(value: unknown): value is ConfigValueRow {

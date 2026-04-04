@@ -1,0 +1,78 @@
+groups:
+  - name: fastconsig-slo-alerts
+    rules:
+      - alert: FastConsigApiHigh5xxRatio
+        expr: |
+          (
+            fastconsig_http_status_bucket_total{bucket="5xx"}
+            /
+            clamp_min(fastconsig_http_requests_total, 1)
+          ) > 0.02
+        for: 10m
+        labels:
+          severity: critical
+          service: api
+          slo: availability
+        annotations:
+          summary: "Alta taxa de erro 5xx no FastConsig API"
+          description: "A taxa de erro 5xx está acima de 2% por 10 minutos."
+          runbook: "docs/runbooks/incidents/api-high-5xx.md"
+
+      - alert: FastConsigApiErrorBudgetBurnFast
+        expr: |
+          (
+            increase(fastconsig_http_status_bucket_total{bucket="5xx"}[5m])
+            /
+            clamp_min(increase(fastconsig_http_requests_total[5m]), 1)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: api
+          slo: availability
+        annotations:
+          summary: "Consumo acelerado de error budget (5m)"
+          description: "Erro >5% na janela curta. Queima rápida de budget."
+          runbook: "docs/runbooks/incidents/api-high-5xx.md"
+
+      - alert: FastConsigApiErrorBudgetBurnSlow
+        expr: |
+          (
+            increase(fastconsig_http_status_bucket_total{bucket="5xx"}[1h])
+            /
+            clamp_min(increase(fastconsig_http_requests_total[1h]), 1)
+          ) > 0.01
+        for: 30m
+        labels:
+          severity: warning
+          service: api
+          slo: availability
+        annotations:
+          summary: "Consumo sustentado de error budget (1h)"
+          description: "Erro >1% na janela longa. Investigar tendência."
+          runbook: "docs/runbooks/incidents/api-high-5xx.md"
+
+      - alert: FastConsigApiHighLatencyP95Approx
+        expr: |
+          avg(fastconsig_http_route_duration_avg_ms) > 800
+        for: 15m
+        labels:
+          severity: warning
+          service: api
+          slo: latency
+        annotations:
+          summary: "Latência média alta em rotas da API"
+          description: "A média de latência por rota está acima de 800ms por 15 minutos."
+          runbook: "docs/runbooks/incidents/api-high-latency.md"
+
+      - alert: FastConsigDeadLetterBacklog
+        expr: fastconsig_event_outbox_dead_letter > 0
+        for: 10m
+        labels:
+          severity: critical
+          service: event-outbox
+          slo: durability
+        annotations:
+          summary: "Dead-letter backlog detectado"
+          description: "Existem eventos na DLQ por mais de 10 minutos."
+          runbook: "docs/runbooks/incidents/event-dlq-backlog.md"

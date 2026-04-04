@@ -35,6 +35,10 @@ export class OpsService {
     };
   }
 
+  async durableMetricsSnapshot(): Promise<DurableEventsSnapshot> {
+    return this.repo.durablePipelineHealth();
+  }
+
   private buildAlertHints(
     durable: DurableEventsSnapshot
   ): Array<{ level: "info" | "warning" | "critical"; message: string }> {

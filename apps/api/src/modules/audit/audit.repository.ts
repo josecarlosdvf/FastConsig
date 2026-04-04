@@ -1,4 +1,5 @@
-import type { Prisma, PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
+import type { InputJsonObject } from "@prisma/client/runtime/library";
 import { getContext } from "@fastconsig/core";
 import { prisma } from "../../shared/database/prisma";
 
@@ -31,7 +32,7 @@ export class AuditRepository {
         actor_user_id: input.actorUserId ?? ctx?.userId ?? null,
         request_id: ctx?.requestId ?? null,
         trace_id: ctx?.traceId ?? null,
-        payload: input.payload as Prisma.InputJsonObject,
+        payload: input.payload as InputJsonObject,
       },
     });
   }

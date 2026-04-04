@@ -14,5 +14,8 @@ router.use(apiRateLimiter, tenantMiddleware, authMiddleware);
 router.get("/observability", requirePermission("event:read"), (req, res) =>
   void controller.observability(req, res)
 );
+router.get("/prometheus", requirePermission("event:read"), (req, res) =>
+  void controller.prometheusMetrics(req, res)
+);
 
 export { router as opsRouter };

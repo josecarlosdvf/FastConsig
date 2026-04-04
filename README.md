@@ -75,6 +75,27 @@ npm run dev
 
 - IA: `docs/ai-behavior-guidelines.md`
 - Orquestrador humano: `docs/human-orchestrator-quick-guide.md`
+- SLOs: `docs/slo.md`
+- Runbooks: `docs/runbooks/incidents/*`
+
+## Observabilidade de produção (Grafana + Prometheus + Alertmanager)
+
+Serviços adicionados no `docker-compose.yml`:
+- `prometheus` (`:9090`)
+- `alertmanager` (`:9093`)
+- `grafana` (`:3002`, admin/admin)
+- `redis` (`:6379`) para event bus durável
+
+Endpoints da API:
+- JSON: `GET /api/metrics`
+- Prometheus: `GET /metrics`
+- Snapshot operacional autenticado: `GET /api/ops/observability`
+
+Subir stack:
+
+```bash
+docker compose up -d
+```
 
 ## Scripts
 

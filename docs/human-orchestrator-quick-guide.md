@@ -44,3 +44,14 @@ seguindo governança FastConsig, com validação final completa.
 - Testes e lint/typecheck verdes
 - Documentação de operação e rollback
 - Evidência de segurança e observabilidade
+
+## 7) Prompt pronto para observabilidade de produção
+```text
+Monte stack de produção com Grafana + Prometheus + Alertmanager,
+incluindo:
+- dashboards provisionados
+- SLOs e alertas
+- runbooks de incidentes
+- validação final de build/typecheck/test
+e finalize com versão fechada para evolução de CRM/ERP.
+```

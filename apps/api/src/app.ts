@@ -16,9 +16,12 @@ import { controlPlaneCorePlugin } from "./plugins/control-plane-core.plugin";
 import { auditRouter } from "./modules/audit/audit.router";
 import { eventsRouter, eventsService } from "./modules/events/events.router";
 import { opsRouter } from "./modules/ops/ops.router";
+import { OpsService } from "./modules/ops/ops.service";
+import { OpsRepository } from "./modules/ops/ops.repository";
 
 export async function createApp(): Promise<Application> {
   const app = express();
+  const opsService = new OpsService(new OpsRepository());
 
   // Order matters: requestId → context → metrics → cors/json → routes
   app.use(requestIdMiddleware);
@@ -33,6 +36,19 @@ export async function createApp(): Promise<Application> {
 
   app.get("/api/metrics", (_req, res) => {
     res.json(metricsStore.snapshot());
+  });
+
+  app.get("/metrics", (_req, res) => {
+    void opsService
+      .durableMetricsSnapshot()
+      .then((durable) => {
+        res.setHeader("content-type", "text/plain; version=0.0.4; charset=utf-8");
+        res.send(metricsStore.prometheusSnapshot(durable));
+      })
+      .catch(() => {
+        res.setHeader("content-type", "text/plain; version=0.0.4; charset=utf-8");
+        res.send(metricsStore.prometheusSnapshot());
+      });
   });
 
   app.use("/api/auth", authRouter);

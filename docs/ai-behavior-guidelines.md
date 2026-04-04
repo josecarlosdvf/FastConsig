@@ -26,6 +26,7 @@ Padronizar como agentes de IA devem planejar, implementar, validar e publicar mu
 - **Eventos**: publicar no outbox durável; tratar retry e DLQ.
 - **Observabilidade**: preservar `x-request-id`, `x-trace-id`, `x-span-id`.
 - **Plugins**: respeitar limites e timeout de bootstrap.
+- **SRE**: manter dashboard, alertas SLO e runbooks alinhados a cada mudança crítica.
 
 ## Checklist de entrega de IA
 - [ ] Sem violações de arquitetura
