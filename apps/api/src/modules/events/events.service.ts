@@ -19,6 +19,13 @@ export class EventsService {
 
   constructor(private readonly repo: EventsRepository) {}
 
+  private emitDynamicEvent(eventName: string, payload: Record<string, unknown>): void {
+    const dynamicBus = eventBus as unknown as {
+      emit: (name: string, data: Record<string, unknown>) => void;
+    };
+    dynamicBus.emit(eventName, payload);
+  }
+
   async queueEvent(
     eventName: string,
     payload: Record<string, unknown>,
@@ -47,7 +54,7 @@ export class EventsService {
       };
 
       try {
-        eventBus.emit(item.event_name as never, payload as never);
+        this.emitDynamicEvent(item.event_name, payload);
         await this.publishRedisChannel(eventData);
         await this.repo.markDelivered(item.id);
       } catch (err) {

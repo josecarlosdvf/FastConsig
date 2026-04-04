@@ -34,11 +34,5 @@ export const rollbackConfigSchema = z.object({
 export type RollbackConfigInput = z.infer<typeof rollbackConfigSchema>;
 
 export const rollbackConfigRequestSchema = z.object({
-  entries: z.array(
-    z.object({
-      scope: z.enum(["system", "tenant"]),
-      key: z.string().min(3),
-      version: z.number().int().min(1),
-    })
-  ).min(1),
+  entries: z.tuple([rollbackConfigSchema]),
 });
