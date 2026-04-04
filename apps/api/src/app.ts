@@ -23,6 +23,11 @@ export async function createApp(): Promise<Application> {
   const app = express();
   const opsService = new OpsService(new OpsRepository());
 
+  if (process.env.NODE_ENV === "production" && !process.env.METRICS_TOKEN) {
+    // eslint-disable-next-line no-console
+    console.warn("METRICS_TOKEN is not set in production; /metrics will return 503.");
+  }
+
   // Order matters: requestId → context → metrics → cors/json → routes
   app.use(requestIdMiddleware);
   app.use(contextMiddleware);

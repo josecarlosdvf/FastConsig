@@ -76,7 +76,7 @@ services:
       - "3002:3000"
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-GENERATE_SECURE_RANDOM_PASSWORD_HERE}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - ./infrastructure/observability/grafana/provisioning:/etc/grafana/provisioning:ro
