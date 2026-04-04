@@ -9,13 +9,13 @@ interface DurableEventsSnapshot {
   deliveredLastHour: number;
 }
 
-const DEFAULT_FAILED_EVENTS_WARNING_THRESHOLD = 10;
+const DEFAULT_OPS_FAILED_EVENTS_WARNING_THRESHOLD = 10;
 function failedEventsWarningThreshold(): number {
   const raw = process.env.OPS_FAILED_EVENTS_WARNING_THRESHOLD;
-  if (!raw) return DEFAULT_FAILED_EVENTS_WARNING_THRESHOLD;
+  if (!raw) return DEFAULT_OPS_FAILED_EVENTS_WARNING_THRESHOLD;
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed < 1) {
-    return DEFAULT_FAILED_EVENTS_WARNING_THRESHOLD;
+    return DEFAULT_OPS_FAILED_EVENTS_WARNING_THRESHOLD;
   }
   return Math.floor(parsed);
 }

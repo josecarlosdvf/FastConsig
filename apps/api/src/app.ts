@@ -41,7 +41,7 @@ export async function createApp(): Promise<Application> {
   app.get("/metrics", (req, res) => {
     const token = process.env.METRICS_TOKEN;
     if (process.env.NODE_ENV === "production" && !token) {
-      res.status(503).json({ error: "METRICS_TOKEN is required in production" });
+      res.status(503).json({ error: "Service temporarily unavailable" });
       return;
     }
     if (token) {
