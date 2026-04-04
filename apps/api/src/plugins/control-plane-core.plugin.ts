@@ -25,4 +25,3 @@ export const controlPlaneCorePlugin: Plugin = {
     // No routes registered by this plugin. It only exposes declarative metadata.
   },
 };
-

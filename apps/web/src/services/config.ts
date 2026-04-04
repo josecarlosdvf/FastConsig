@@ -53,4 +53,3 @@ export const configApi = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 };
-

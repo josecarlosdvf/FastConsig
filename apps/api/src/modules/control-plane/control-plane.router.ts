@@ -15,4 +15,3 @@ router.use(apiRateLimiter, tenantMiddleware, authMiddleware);
 router.get("/pages", (req, res) => controller.listPages(req, res));
 
 export { router as controlPlaneRouter };
-

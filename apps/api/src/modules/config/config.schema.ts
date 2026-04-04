@@ -19,4 +19,3 @@ export const updateConfigSchema = z.object({
 });
 
 export type UpdateConfigInput = z.infer<typeof updateConfigSchema>;
-

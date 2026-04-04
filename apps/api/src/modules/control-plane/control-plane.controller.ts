@@ -10,4 +10,3 @@ export class ControlPlaneController {
     res.json(this.service.listPagesForRole(userRole));
   }
 }
-

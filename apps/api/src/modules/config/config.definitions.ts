@@ -39,4 +39,3 @@ export const BASE_CONFIG_DEFINITIONS: ConfigDefinition[] = [
     options: ["light", "dark"],
   },
 ];
-

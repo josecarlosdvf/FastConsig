@@ -49,4 +49,3 @@ export interface ConfigSchemaMap {
 export interface TypedConfigAccessor {
   get<K extends keyof ConfigSchemaMap>(key: K): ConfigSchemaMap[K];
 }
-
