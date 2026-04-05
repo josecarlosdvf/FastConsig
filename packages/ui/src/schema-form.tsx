@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * SchemaForm — Zod-driven form component.
  *
