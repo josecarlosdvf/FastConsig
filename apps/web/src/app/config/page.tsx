@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Button,
-  Container,
   Form,
   FormAlert,
   Input,
@@ -13,6 +12,7 @@ import {
 import { z } from "zod";
 import { configApi, ConfigItem } from "../../services/config";
 import { ControlLayout } from "../control-layout";
+import { useAuthSession } from "../use-auth-session";
 
 type Category = ConfigItem["category"];
 const categories: Category[] = ["security", "auth", "platform", "branding", "ops"];
@@ -32,8 +32,6 @@ function parseValue(type: ConfigItem["type"], raw: string): ConfigItem["value"] 
 }
 
 export default function ConfigPage(): JSX.Element {
-  const [tenantId, setTenantId] = useState("");
-  const [token, setToken] = useState("");
   const [scope, setScope] = useState<"tenant" | "system">("tenant");
   const [activeCategory, setActiveCategory] = useState<Category>("security");
   const [items, setItems] = useState<ConfigItem[]>([]);
@@ -42,6 +40,8 @@ export default function ConfigPage(): JSX.Element {
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
+
+  const session = useAuthSession();
 
   const filtered = useMemo(
     () => items.filter((item) => item.category === activeCategory),
@@ -72,11 +72,11 @@ export default function ConfigPage(): JSX.Element {
   }
 
   const load = useCallback(async (): Promise<void> => {
-    if (!tenantId || !token) return;
+    if (!session) return;
     setLoading(true);
     setError("");
     try {
-      const result = await listByScope(scope, tenantId, token);
+      const result = await listByScope(scope, session.tenantId, session.accessToken);
       setItems(result);
       const nextDraft: Record<string, string> = {};
       for (const item of result) {
@@ -88,7 +88,7 @@ export default function ConfigPage(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, [scope, tenantId, token]);
+  }, [scope, session]);
 
   useEffect(() => {
     load().catch((err: unknown) => {
@@ -98,7 +98,7 @@ export default function ConfigPage(): JSX.Element {
   }, [load]);
 
   async function saveSingle(item: ConfigItem, rawValue: string): Promise<void> {
-    if (!tenantId || !token) return;
+    if (!session) return;
     setLoading(true);
     setError("");
     setFeedback("");
@@ -106,7 +106,7 @@ export default function ConfigPage(): JSX.Element {
       const payload = {
         entries: [{ key: item.key, value: parseValue(item.type, rawValue) }],
       };
-      const result = await updateByScope(scope, tenantId, token, payload);
+      const result = await updateByScope(scope, session.tenantId, session.accessToken, payload);
       setItems(result);
       setFeedback("Configurações salvas com sucesso.");
     } catch (err: unknown) {
@@ -118,25 +118,13 @@ export default function ConfigPage(): JSX.Element {
 
   return (
     <ControlLayout>
-      <Container size="lg">
       <PageHeader
         title="Control Plane • Configuração"
         description="Engine de configuração dinâmica por escopo e categoria."
       />
       <Form>
-        <Input
-          id="tenant-id"
-          label="Tenant ID"
-          value={tenantId}
-          onChange={(e) => setTenantId(e.target.value)}
-        />
-        <Input
-          id="token"
-          label="Access Token (JWT)"
-          type="password"
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
-        />
+        <Input id="tenant-id" label="Tenant ID" value={session?.tenantId ?? ""} readOnly />
+        <Input id="token" label="Access Token (JWT)" type="password" value={session?.accessToken ?? ""} readOnly />
         <Button type="button" variant={scope === "tenant" ? "primary" : "secondary"} onClick={() => setScope("tenant")}>
           Tenant
         </Button>
@@ -203,7 +191,6 @@ export default function ConfigPage(): JSX.Element {
         {feedback ? <FormAlert type="success" message={feedback} /> : null}
         {error ? <FormAlert type="error" message={error} /> : null}
       </Form>
-      </Container>
     </ControlLayout>
   );
 }

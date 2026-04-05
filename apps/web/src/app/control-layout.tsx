@@ -4,6 +4,14 @@ import { useEffect, useState } from "react";
 import { AppShell, Container, Navbar, Button, Input, Form } from "@fastconsig/ui";
 import { useRouter } from "next/navigation";
 import { controlPlaneApi, ControlPlanePage } from "../services/control-plane";
+import { authApi } from "../services/auth";
+import {
+  clearSession,
+  readSession,
+  readTheme,
+  setTheme,
+  type SessionState,
+} from "../services/session-client";
 
 interface ControlLayoutProps {
   children: React.ReactNode;
@@ -11,23 +19,80 @@ interface ControlLayoutProps {
 
 export function ControlLayout({ children }: ControlLayoutProps): JSX.Element {
   const router = useRouter();
-  const [tenantId, setTenantId] = useState("");
-  const [token, setToken] = useState("");
+  const [session, setSession] = useState<SessionState | null>(null);
+  const [themeMode, setThemeMode] = useState<"light" | "dark" | "system">("system");
   const [pages, setPages] = useState<ControlPlanePage[]>([]);
+  const [manualTenant, setManualTenant] = useState("");
+  const [manualToken, setManualToken] = useState("");
 
   useEffect(() => {
-    if (!tenantId || !token) return;
-    controlPlaneApi.listPages(tenantId, token).then(setPages).catch(() => setPages([]));
-  }, [tenantId, token]);
+    const current = readSession();
+    if (!current) {
+      router.replace("/login");
+      return;
+    }
+    setSession(current);
+    setManualTenant(current.tenantId);
+    setManualToken(current.accessToken);
+    const currentTheme = readTheme();
+    setThemeMode(currentTheme);
+    setTheme(currentTheme);
+  }, [router]);
+
+  useEffect(() => {
+    if (!session) return;
+    controlPlaneApi
+      .listPages(session.tenantId, session.accessToken)
+      .then(setPages)
+      .catch(() => {
+        clearSession();
+        router.replace("/login");
+      });
+  }, [router, session]);
+
+  if (!session) {
+    return (
+      <Container size="sm">
+        <Form title="Carregando sessão">
+          <Input label="Status" value="Validando autenticação..." readOnly />
+        </Form>
+      </Container>
+    );
+  }
+
+  async function logout(): Promise<void> {
+    const current = session;
+    if (!current) return;
+    try {
+      await authApi.logout(current.tenantId, current.refreshToken);
+    } catch {
+      // noop
+    } finally {
+      clearSession();
+      router.replace("/login");
+    }
+  }
+
+  const quickLinks: Array<{ route: string; title: string }> = [
+    { route: "/sessions", title: "Sessões" },
+    { route: "/access", title: "Acessos" },
+    { route: "/plugins", title: "Plugins" },
+  ];
 
   return (
     <AppShell
       sidebar={(
         <Container>
           <Form>
-            <InputBlock label="Tenant ID" value={tenantId} onChange={setTenantId} />
-            <InputBlock label="Token" value={token} onChange={setToken} type="password" />
+            <InputBlock label="Tenant ID" value={manualTenant} onChange={setManualTenant} />
+            <InputBlock label="Token" value={manualToken} onChange={setManualToken} type="password" />
+            <Input label="Usuário" value={session.user.email} readOnly />
           </Form>
+          {quickLinks.map((page) => (
+            <Button key={page.route} variant="secondary" onClick={() => router.push(page.route)}>
+              {page.title}
+            </Button>
+          ))}
           {pages.map((page) => (
             <Button key={page.key} variant="secondary" onClick={() => router.push(page.route)}>
               {page.title}
@@ -36,7 +101,46 @@ export function ControlLayout({ children }: ControlLayoutProps): JSX.Element {
         </Container>
       )}
     >
-      <Navbar logo={<span>FastConsig Control Plane</span>} />
+      <Navbar
+        logo={<span>FastConsig Control Plane</span>}
+        actions={(
+          <>
+            <Button
+              variant={themeMode === "light" ? "primary" : "secondary"}
+              size="sm"
+              onClick={() => {
+                setThemeMode("light");
+                setTheme("light");
+              }}
+            >
+              Claro
+            </Button>
+            <Button
+              variant={themeMode === "dark" ? "primary" : "secondary"}
+              size="sm"
+              onClick={() => {
+                setThemeMode("dark");
+                setTheme("dark");
+              }}
+            >
+              Escuro
+            </Button>
+            <Button
+              variant={themeMode === "system" ? "primary" : "secondary"}
+              size="sm"
+              onClick={() => {
+                setThemeMode("system");
+                setTheme("system");
+              }}
+            >
+              Sistema
+            </Button>
+            <Button variant="danger" size="sm" onClick={() => void logout()}>
+              Sair
+            </Button>
+          </>
+        )}
+      />
       <Container>{children}</Container>
     </AppShell>
   );
