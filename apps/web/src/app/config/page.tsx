@@ -5,6 +5,7 @@ import {
   Button,
   Form,
   FormAlert,
+  FormSection,
   Input,
   PageHeader,
   SchemaForm,
@@ -152,7 +153,7 @@ export default function ConfigPage(): JSX.Element {
 
       <Form>
         {filtered.map((item) => (
-          <Form key={item.key} title={item.label} description={item.description ?? item.key}>
+          <FormSection key={item.key} title={item.label} description={item.description ?? item.key}>
             <Input
               id={`${item.key}-preview`}
               label={item.key}
@@ -186,7 +187,7 @@ export default function ConfigPage(): JSX.Element {
                 }}
               />
             ) : null}
-          </Form>
+          </FormSection>
         ))}
         {feedback ? <FormAlert type="success" message={feedback} /> : null}
         {error ? <FormAlert type="error" message={error} /> : null}
